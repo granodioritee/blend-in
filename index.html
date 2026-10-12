@@ -160,6 +160,27 @@ details.rules{font-size:15px;color:var(--ink2)}
 details.rules summary{cursor:pointer;color:var(--ink);font:800 16px var(--f-disp)}
 details.rules ul{margin:10px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
 details.rules b{color:var(--ink)}
+/* chat: quick reactions, a log you can open, and bubbles that pop in at the top when a message lands */
+.taunts{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 4px 5px 2px;margin:-2px}
+.taunts::-webkit-scrollbar{display:none}
+.taunt{flex:none;border:2px solid var(--ink);background:var(--white);color:var(--ink);font:700 13.5px var(--f-disp);padding:5px 11px;border-radius:999px;cursor:pointer;white-space:nowrap;box-shadow:2px 2px 0 var(--ink);transition:transform .08s,box-shadow .08s,background .15s}
+.taunt:active{transform:translate(2px,2px);box-shadow:none;background:var(--sun)}
+.taunt:disabled{opacity:.4;box-shadow:none;cursor:default}
+.chat summary{cursor:pointer;font:800 15px var(--f-disp)}
+.chatlog{list-style:none;margin:10px 0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:190px;overflow-y:auto;font-size:15px}
+.chatlog li{line-height:1.4;overflow-wrap:anywhere}
+.chatlog b{font-weight:800;margin-right:6px}
+.chatlog .empty{color:var(--ink2);font-size:14px}
+.bubbles{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;align-items:center;gap:7px;pointer-events:none;width:min(calc(100vw - 32px),420px)}
+.bubble{display:flex;align-items:center;gap:8px;max-width:100%;padding:7px 14px 7px 7px;border-radius:18px 18px 18px 5px;border:2px solid var(--ink);background:var(--white);color:var(--ink);font:700 15px/1.35 var(--f-disp);box-shadow:4px 4px 0 var(--pink);animation:bubIn .35s cubic-bezier(.2,.9,.3,1.3)}
+.bubble.mine{background:var(--sun-soft);box-shadow:4px 4px 0 var(--blue)}
+.bubble .av{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;font:800 12px var(--f-disp);border:2px solid var(--ink)}
+.bubble .t{overflow-wrap:anywhere}
+.bubble b{font-weight:800;margin-right:5px;color:var(--blue)}
+.bubble.out{animation:bubOut .4s ease-in forwards}
+@keyframes bubIn{from{opacity:0;transform:translateY(-12px) rotate(-2deg) scale(.9)}}
+@keyframes bubOut{to{opacity:0;transform:translateY(-8px)}}
+@media (prefers-reduced-motion:reduce){.bubble,.bubble.out{animation:none}}
 .credit{text-align:center;font:400 12.5px var(--f-mono);color:var(--faint);padding-top:2px}
 .credit a{color:var(--ink2)}
 .credit a:hover{color:var(--pink)}
@@ -167,6 +188,7 @@ details.rules b{color:var(--ink)}
 <script src="analytics.js"></script>
 </head>
 <body>
+<div class="bubbles" id="bubbles" aria-live="polite"></div>
 <div class="wrap">
   <header>
     <h1 class="mark">Blend <span>In</span></h1>
@@ -194,6 +216,13 @@ details.rules b{color:var(--ink)}
           <div class="rcode"><small>Room code</small><b id="rcode"></b><span class="x" id="adultTag" hidden>21+</span></div>
           <div class="rbtns"><button class="btn sm" id="invite" type="button">Invite</button><button class="btn sm" id="leave" type="button">Leave</button></div>
         </div>
+        <div class="taunts" id="taunts" role="group" aria-label="Quick reactions"></div>
+        <details class="chat" id="chatBox">
+          <summary>Chat <span id="chatCount"></span></summary>
+          <ol class="chatlog" id="chatLog"></ol>
+          <div class="sendrow"><input class="inp" id="chatIn" maxlength="80" placeholder="Say something…" autocomplete="off" enterkeyhint="send" aria-label="Chat message"><button class="btn go" type="button" id="chatSend">Send</button></div>
+        </details>
+        <p class="hint" id="chatMuted" hidden>You're out, so chat is off until the game ends. No hints!</p>
         <p class="conn" data-k="wait">Connecting…</p>
       </div>
 
@@ -220,7 +249,7 @@ details.rules b{color:var(--ink)}
             <h2 id="actTitle"></h2>
             <p class="hint" id="actHint"></p>
             <div class="sendrow" id="clueBox" hidden>
-              <input class="inp" id="clueIn" maxlength="30" placeholder="Your clue" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" aria-label="Your clue">
+              <input class="inp" id="clueIn" maxlength="30" placeholder="Up to 3 words" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" aria-label="Your clue">
               <button class="btn go" id="clueSend" type="button">Send</button>
             </div>
             <div class="sendrow" id="guessBox" hidden>
@@ -266,8 +295,8 @@ details.rules b{color:var(--ink)}
     <ul>
       <li>Everyone gets a secret word. Most players share the same one: they're the <b>Civilians</b>.</li>
       <li>The <b>Undercover</b> gets a similar but different word, like Coffee and Tea, and doesn't know they're the Undercover. <b>Mr. White</b> gets no word at all, and knows it.</li>
-      <li>Take turns giving one short clue about your word, without saying it. Too vague and you look suspicious; too clear and the Undercover catches on.</li>
-      <li>After everyone has given a clue, vote out who you think has a different word. Most votes goes; a tie means nobody.</li>
+      <li>Take turns giving a clue about your word, three words at most, without saying it. Too vague and you look suspicious; too clear and the Undercover catches on. Miss your turn twice in a row and you're out.</li>
+      <li>The first vote comes once everyone has given two clues, then after every round. Vote out who you think has a different word, or vote to skip. Most votes goes; a tie or a win for skip means nobody.</li>
       <li>If Mr. White is voted out, they get one guess at the Civilians' word. Right means Mr. White wins.</li>
       <li>Civilians win when every Undercover and Mr. White is out. The Undercover side wins if they last until only one Civilian is left.</li>
       <li><b>21+</b> uses adult word pairs. Only with friends who are into it.</li>
@@ -336,7 +365,7 @@ const ROLE = {
 const roleTag = r => r && ROLE[r] ? `<span class="tag ${r}">${ROLE[r].name}</span>` : "";
 const WHITE = "#"; /* Mr. White's slot in the deck */
 
-const MIN_PLAYERS = 3, MAX_PLAYERS = 12, CLUE_MAX = 30;
+const MIN_PLAYERS = 3, MAX_PLAYERS = 12, CLUE_MAX = 30, CLUE_WORDS = 3, FIRST_VOTE = 2;
 const DEAL_MS = 25000, MIN_DEAL_MS = 4000, TURN_MS = 45000, OFF_TURN_MS = 6000, VOTE_MS = 120000, WHITE_MS = 45000;
 const undercoversFor = n => n >= 10 ? 3 : n >= 7 ? 2 : 1;
 const whiteFor = (n, on) => on && n >= 5 ? 1 : 0;
@@ -372,6 +401,7 @@ const S = (() => {
     win(){ [523,659,784,1047,1319].forEach((f,i) => tone(f,.5,{type:"triangle",vol:.12,at:i*.1})); },
     lose(){ [392,370,349,262].forEach((f,i) => tone(f,.5,{type:"sawtooth",vol:.04,at:i*.18})); },
     join(){ tone(523,.15,{vol:.1}); tone(784,.25,{vol:.08,at:.1}); },
+    chat(){ tone(988,.07,{vol:.1}); tone(1319,.1,{vol:.08,at:.06}); },
   };
 })();
 /* Safari on a Mac only lets audio start from mousedown/click, not pointerdown, so listen for click too */
@@ -482,6 +512,7 @@ async function joinRoom(c, create){
     F.onValue(R("players"), s => onPlayers(s.val() || {})),
     F.onValue(R("cfg"), s => { const v = s.val() || {}; cfg = { lang:v.lang === "en" ? "en" : "id", adult:v.adult === true, white:v.white !== false }; render(); }),
     F.onValue(R("game"), s => onGame(s.val())),
+    F.onValue(F.query(R("chat"), F.limitToLast(30)), s => onChat(s.val()), e => console.warn(e)),
   ];
   S.join();
   track(create ? "room_create" : "room_join");
@@ -493,6 +524,7 @@ function leaveRoom(){
   G.subs.forEach(u => { try { u(); } catch(e){} });
   if(myRef){ F.onDisconnect(myRef).cancel().catch(() => {}); F.remove(myRef).catch(() => {}); myRef = null; }
   inRoom = false; code = ""; players = {}; game = null; G = blank(); ui.phaseKey = ""; ui.clues = null; ui.outs = null;
+  chat = []; chatSeen = null; $("#bubbles").replaceChildren();
   history_replace(location.pathname + location.search);
   render();
 }
@@ -591,10 +623,14 @@ const votesOf = n => val(G.votes, n) || {};
 const clueOf = (n, id) => val(val(G.clues, n), id);
 /* speaking order for a round: the game's fixed order without the players who are out, starting one further along each round */
 function speakers(n){
-  const a = aliveIds(); if(!a.length) return a;
+  /* rotate the full order, then drop who's out, so someone going out mid-round doesn't reshuffle the rest of the round */
+  const a = orderIds(); if(!a.length) return a;
   const k = (n - 1) % a.length;
-  return a.slice(k).concat(a.slice(0, k));
+  return a.slice(k).concat(a.slice(0, k)).filter(id => !isOut(id));
 }
+/* the round a player went out in: "3" by vote, "i3" for missing two clues in a row */
+const outRound = id => { const o = val(G.out, id); return o ? parseInt(String(o).replace(/^i/, ""), 10) || 0 : 0; };
+const idleOut = id => /^i/.test(String(val(G.out, id) || ""));
 function winnerNow(){
   if(!game) return null;
   const outs = Object.keys(G.out || {});
@@ -608,10 +644,10 @@ function winnerNow(){
 }
 function tally(vs, alive){
   const count = {};
-  for(const id of alive){ const t = vs[id]; if(t && alive.includes(t)) count[t] = (count[t] || 0) + 1; }
+  for(const id of alive){ const t = vs[id]; if(t && (t === "skip" || alive.includes(t))) count[t] = (count[t] || 0) + 1; }
   let best = null, top = 0, tie = false;
   for(const [t, c] of Object.entries(count)){ if(c > top){ best = t; top = c; tie = false; } else if(c === top) tie = true; }
-  return !best || tie ? "none" : best;
+  return !best || tie || best === "skip" ? "none" : best;
 }
 const onlineGameIds = () => gameIds().filter(id => players[id]);
 const amDuty = () => onlineGameIds().sort()[0] === uid;
@@ -653,7 +689,17 @@ async function step(){
     const list = speakers(n), sp = p.speaker;
     const said = !!clueOf(n, sp), gone = !players[sp] && now - p.startedAt >= OFF_TURN_MS;
     if(!said && !gone && now < p.endsAt && list.includes(sp)) return;
-    await setPhase(p, p.turn + 1 < list.length ? talkPhase(n, p.turn + 1) : phaseFor(n, "vote", VOTE_MS));
+    /* a second turn in a row without a clue puts you out */
+    if(!said && list.includes(sp) && n > 1 && !clueOf(n - 1, sp)){ await F.set(R(`out/${id}/${sp}`), "i" + n).catch(e => console.warn(e)); return; }
+    if(isOut(sp)){
+      if(!val(G.roles, sp)){ await probe(`role/${id}/${sp}`, ["c", "u", "w"]); return; }
+      const w = winnerNow(); if(w) return finish(w);
+    }
+    /* if the speaker just went out, the next speaker has slid into their place in the list */
+    const next = isOut(sp) ? p.turn : p.turn + 1;
+    if(next < list.length) return setPhase(p, talkPhase(n, next));
+    /* nobody votes until everyone has given at least two clues */
+    await setPhase(p, n < FIRST_VOTE ? talkPhase(n + 1, 0) : phaseFor(n, "vote", VOTE_MS));
   } else if(p.stage === "vote"){
     const res = val(G.res, n);
     if(res === undefined || res === null){
@@ -689,6 +735,7 @@ function markDone(n){ if(inGame()) F.set(R(`done/${game.id}/${n}/${uid}`), true)
 function sendClue(){
   const t = cleanText($("#clueIn").value, CLUE_MAX);
   if(!t){ $("#clueIn").focus(); return; }
+  if(t.split(" ").length > CLUE_WORDS){ setHint(`Three words at most. That was ${t.split(" ").length}.`, true); return; }
   if(G.word && G.word !== WHITE && norm(t).includes(norm(G.word))){ setHint("That gives your word away. Describe it without saying it.", true); return; }
   $("#clueSend").disabled = true;
   F.set(R(`clue/${game.id}/${nowN()}/${uid}`), t).then(() => { $("#clueIn").value = ""; $("#clueIn").blur(); })
@@ -738,6 +785,7 @@ function render(){
   const live = game && stage() && stage() !== "over";
   $("#adultTag").hidden = !(live ? game.adult : cfg.adult);
   sideEffects();
+  renderChatAccess();
   renderSetup();
   renderGame();
   paintTimer();
@@ -749,7 +797,7 @@ function sideEffects(){
   const st = stage(), n = nowN(), p = G.phase;
   if(st === "deal" && G.slot && !G.readySent && inGame()){ G.readySent = true; markDone(0); }
   if(G.over && G.word && !G.showSent && inGame() && !val(G.show, uid)){ G.showSent = true; F.set(R(`show/${game.id}/${uid}`), G.word).catch(e => { console.warn(e); G.showSent = false; }); }
-  const key = `${st}${n}.${p.turn || 0}`;
+  const key = `${st}${n}.${p.turn || 0}.${p.speaker || ""}`;
   if(key !== ui.phaseKey){
     const first = ui.phaseKey === "";
     ui.phaseKey = key; ui.lastTick = -1;
@@ -865,7 +913,9 @@ function renderAction(){
 }
 /* has this player let round r go by without a clue? */
 function missed(r, id){
-  const o = val(G.out, id); if(o && Number(o) < r) return false;
+  const o = outRound(id);
+  if((o && o < r) || clueOf(r, id)) return false;
+  if(o === r && idleOut(id)) return true;
   const n = nowN(), st = stage();
   if(r < n || (r === n && st !== "talk" && st !== "deal")) return true;
   if(r === n && st === "talk"){ const i = speakers(n).indexOf(id); return i >= 0 && i < G.phase.turn; }
@@ -893,7 +943,6 @@ function renderActionInto(list, acts){
   if(fk && fk !== ui.focusKey && !matchMedia("(pointer: coarse)").matches) setTimeout(() => $(myTurn ? "#clueIn" : "#guessIn").focus(), 50);
   ui.focusKey = fk;
   if(!game || !p){ title.textContent = ""; setHint(""); return; }
-  const outSub = id => { const o = val(G.out, id); return o ? `Voted out in round ${o}` : ""; };
   const row = (id, o = {}) => personRow(id, Object.assign({
     gone:isOut(id), off:!players[id], tags:roleTag(val(G.roles, id)) + (players[id] ? "" : '<span class="tag off">Away</span>'),
     sub:clueChips(id),
@@ -927,18 +976,20 @@ function renderActionInto(list, acts){
     title.textContent = "Clues";
     const order = speakers(n), next = order[p.turn + 1];
     if(inGame()){
-      if(myTurn) setHint(G.word === WHITE ? "Your turn. You have no word, so bluff something that fits the clues so far." : "Your turn! One short clue about your word, without saying it.");
+      const warn = n > 1 && !clueOf(n - 1, uid) ? " You missed your last turn, so miss this one too and you're out." : "";
+      if(myTurn) setHint((G.word === WHITE ? "Your turn. You have no word, so bluff something that fits the clues so far. Three words at most." : "Your turn! Up to three words about your word, without saying it.") + warn);
       else if(p.speaker === uid) setHint("Clue sent. Now watch the others.");
       else if(!meAlive()) setHint("You're out. Watch the rest, and no hints!");
       else setHint(`${nameOf(p.speaker)} is thinking of a clue…${next === uid ? " You're next." : ""}`);
     }
+    if(n < FIRST_VOTE) ready.textContent = `First vote after round ${FIRST_VOTE}, once everyone has two clues`;
     list.replaceChildren(...order.map(id => row(id, { cls:id === p.speaker ? "cur" : "", tags:id === p.speaker ? '<span class="tag speak">Now</span>' : (players[id] ? "" : '<span class="tag off">Away</span>') })), ...outs.map(id => row(id)));
     return;
   }
   if(st === "vote"){
     title.textContent = "Who doesn't fit?";
     const vs = votesOf(n), mine = vs[uid], decided = val(G.res, n) != null, alive = aliveIds();
-    if(inGame()) setHint(!meAlive() ? "You're out. Watch the vote." : decided ? "The vote is closed." : mine ? `You voted for ${nameOf(mine)}. Tap someone else to change it.` : "Read the clues, talk it over, then tap who to vote out. Most votes goes; a tie means nobody.");
+    if(inGame()) setHint(!meAlive() ? "You're out. Watch the vote." : decided ? "The vote is closed." : mine === "skip" ? "You voted to skip. Tap someone to change your mind." : mine ? `You voted for ${nameOf(mine)}. Tap someone else to change it.` : "Read the clues, talk it over, then tap who to vote out. Most votes goes; a tie or a win for skip means nobody.");
     list.replaceChildren(...alive.map(id => {
       const who = Object.keys(vs).filter(x => vs[x] === id && alive.includes(x)).map(nameOf);
       return row(id, {
@@ -948,7 +999,9 @@ function renderActionInto(list, acts){
         sub: clueChips(id) + (who.length ? `<span class="sub">Votes: ${esc(who.join(", "))}</span>` : ""),
       });
     }), ...outs.map(id => row(id)));
-    ready.textContent = `${alive.filter(x => vs[x]).length} of ${alive.length} have voted`;
+    if(meAlive()) acts.append(btn(mine === "skip" ? "Skipping" : "Skip vote", "", decided || mine === "skip", () => castVote("skip")));
+    const skips = alive.filter(x => vs[x] === "skip").length;
+    ready.textContent = `${alive.filter(x => vs[x]).length} of ${alive.length} have voted${skips ? `, ${skips} to skip` : ""}`;
     return;
   }
   if(st === "white"){
@@ -964,10 +1017,17 @@ function btn(label, kind, disabled, fn){ const b = document.createElement("butto
 
 function renderLog(){
   const items = [], last = nowN();
+  const wasA = role => role ? `They were ${role === "w" ? "" : "a "}<b>${ROLE[role].name}</b>.` : "…";
   for(let n = 1; n <= last; n++){
+    orderIds().filter(id => val(G.out, id) === "i" + n).forEach(id => items.push(`<li class="k"><small>Round ${n}</small><b>${esc(nameOf(id))}</b> missed two turns in a row and is out. ${wasA(val(G.roles, id))}</li>`));
     const r = val(G.res, n);
     if(r == null) continue;
-    if(r === "none"){ items.push(`<li><small>Round ${n}</small>The vote was a tie. Nobody went out.</li>`); continue; }
+    if(r === "none"){
+      const counts = {}; Object.values(votesOf(n)).forEach(v => { counts[v] = (counts[v] || 0) + 1; });
+      const skips = counts.skip || 0, most = Math.max(0, ...Object.entries(counts).filter(([k]) => k !== "skip").map(([, c]) => c));
+      items.push(`<li><small>Round ${n}</small>${skips && skips >= most ? "The group voted to skip. Nobody went out." : "The vote was a tie. Nobody went out."}</li>`);
+      continue;
+    }
     const role = val(G.roles, r);
     items.push(`<li class="k"><small>Round ${n}</small><b>${esc(nameOf(r))}</b> was voted out. ${role ? `They were ${role === "w" ? "" : "a "}<b>${ROLE[role].name}</b>.` : "…"}</li>`);
     if(role === "w" && G.guess) items.push(`<li class="k"><small>Round ${n}</small>Mr. White guessed <b>"${esc(G.guess.t)}"</b>. ${G.gres === true ? "Right!" : G.gres === false ? "Wrong." : "…"}</li>`);
@@ -988,6 +1048,70 @@ function paintTimer(){
   bar.style.transform = `scaleX(${left / total})`;
   if(low && mine && s > 0 && s <= 5 && s !== ui.lastTick){ ui.lastTick = s; S.tick(); }
 }
+
+/* ---------- chat and quick reactions ---------- */
+const TAUNTS = ["Sus 👀", "Not me 🙅", "Trust me 😇", "Too vague 🤔", "Big brain 🧠", "😂", "💀", "🔥"];
+const CHAT_MAX = 80;
+let chat = [], chatSeen = null, lastSent = 0;
+const chatName = id => id === uid ? "You" : (players[id] && players[id].name) || nameOf(id);
+/* players who are out stay quiet until their game ends (the rules enforce it too) */
+const chatMuted = () => !!(game && G.phase && stage() !== "over" && inGame() && !meAlive());
+function onChat(v){
+  const list = Object.entries(v || {})
+    .filter(([, m]) => m && typeof m.by === "string" && typeof m.t === "string")
+    .map(([k, m]) => ({ k, by:m.by, t:cleanText(m.t, CHAT_MAX), at:Number(m.at) || 0 }))
+    .filter(m => m.t).sort((a, b) => a.at - b.at || (a.k < b.k ? -1 : 1));
+  /* messages already there when you join go in the log quietly; only new ones pop up */
+  const fresh = chatSeen ? list.filter(m => !chatSeen.has(m.k)) : [];
+  chatSeen = new Set(list.map(m => m.k)); chat = list;
+  fresh.forEach(m => { bubble(m); if(m.by !== uid) S.chat(); });
+  renderChat();
+}
+function sendChat(text){
+  const t = cleanText(text, CHAT_MAX);
+  if(!t || !inRoom || !F || chatMuted()) return false;
+  if(Date.now() - lastSent < 1200) return false;
+  lastSent = Date.now();
+  F.push(R("chat"), { by:uid, t, at:F.serverTimestamp() })
+    .then(() => track("chat_send", { quick:TAUNTS.includes(t) }))
+    .catch(e => console.error(e));
+  return true;
+}
+function bubble(m){
+  const box = $("#bubbles"), nm = chatName(m.by);
+  const el = document.createElement("div"); el.className = "bubble" + (m.by === uid ? " mine" : "");
+  const av = document.createElement("span"); av.className = "av " + avClass(m.by); av.textContent = ((players[m.by] && players[m.by].name) || nameOf(m.by)).slice(0, 1).toUpperCase();
+  const tx = document.createElement("span"); tx.className = "t";
+  const b = document.createElement("b"); b.textContent = nm;
+  tx.append(b, document.createTextNode(m.t));
+  el.append(av, tx); box.append(el);
+  while(box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 450); }, 4200);
+}
+function renderChat(){
+  const log = $("#chatLog");
+  if(!chat.length){ const li = document.createElement("li"); li.className = "empty"; li.textContent = "No messages yet. Say hi, or call someone sus."; log.replaceChildren(li); }
+  else log.replaceChildren(...chat.map(m => {
+    const li = document.createElement("li"), b = document.createElement("b");
+    b.textContent = chatName(m.by); li.append(b, document.createTextNode(m.t)); return li;
+  }));
+  log.scrollTop = log.scrollHeight;
+  $("#chatCount").textContent = chat.length ? `(${chat.length})` : "";
+}
+function renderChatAccess(){
+  const muted = chatMuted();
+  $("#chatMuted").hidden = !muted;
+  $$(".taunt").forEach(b => { b.disabled = muted; });
+  $("#chatIn").disabled = muted; $("#chatSend").disabled = muted;
+}
+$("#taunts").replaceChildren(...TAUNTS.map(t => {
+  const b = document.createElement("button"); b.type = "button"; b.className = "taunt"; b.textContent = t;
+  b.addEventListener("click", () => { if(sendChat(t)) S.tap(); });
+  return b;
+}));
+$("#chatSend").addEventListener("click", () => { const i = $("#chatIn"); if(sendChat(i.value)) i.value = ""; i.focus(); });
+$("#chatIn").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); $("#chatSend").click(); } });
+$("#chatBox").addEventListener("toggle", () => { const log = $("#chatLog"); log.scrollTop = log.scrollHeight; });
 
 /* ---------- wiring ---------- */
 $("#sound").addEventListener("click", () => { soundOn = !soundOn; store.set("bi-sound", soundOn); paintSound(); if(soundOn){ S.init(); S.tap(); } });
