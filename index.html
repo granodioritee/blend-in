@@ -835,7 +835,7 @@ function renderGame(){
   }
   /* word card */
   const wc = $("#wordcard");
-  wc.hidden = !G.word || !inGame();
+  wc.hidden = !G.word || !inGame() || st === "over";
   if(G.word){
     const white = G.word === WHITE;
     $("#wcFront").innerHTML = white
