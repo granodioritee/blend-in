@@ -1,0 +1,1038 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Blend In</title>
+<meta name="description" content="A word party game for your friend group: everyone gets the same secret word, almost everyone. Give clues, find who doesn't fit, and blend in if it's you. Play online with an invite link.">
+<meta property="og:title" content="Blend In">
+<meta property="og:description" content="Everyone gets the same secret word. Almost everyone. Play online with friends.">
+<meta name="theme-color" content="#F3EDE1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23F3EDE1'/%3E%3Ccircle cx='25' cy='32' r='15' fill='%232F5CFF'/%3E%3Ccircle cx='39' cy='32' r='15' fill='%23FF4F8B' fill-opacity='.85'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Mono:wght@400;500&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+/* A risograph party zine: warm paper with a dot screen, deep indigo ink, fluorescent pink and riso blue printed slightly off register. */
+:root{
+  --paper:#F3EDE1; --card:#FFFBF3; --white:#FFFFFF; --ink:#221E3B; --ink2:#59546E; --faint:#8F89A0;
+  --pink:#FF4F8B; --pink-soft:#FFD6E4; --blue:#2F5CFF; --blue-soft:#D9E2FF; --sun:#FFC93C; --sun-soft:#FFEDBA; --mint-soft:#CFF0E2;
+  --f-disp:"Bricolage Grotesque", "Arial Black", system-ui, sans-serif;
+  --f-mono:"DM Mono", ui-monospace, Menlo, monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{
+  margin:0;color:var(--ink);font:16px/1.5 var(--f-disp);padding:16px 16px 40px;
+  background-color:var(--paper);
+  background-image:radial-gradient(rgba(34,30,59,.09) 1px, transparent 1.4px);background-size:12px 12px;
+  -webkit-tap-highlight-color:transparent;
+}
+.wrap{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 0 2px}
+.mark{margin:0;font:800 clamp(32px,10vw,42px)/.95 var(--f-disp);letter-spacing:-.035em;color:var(--blue);text-shadow:3px 2px 0 var(--pink)}
+.mark span{color:var(--pink);text-shadow:-3px 2px 0 var(--blue)}
+.icon-btn{width:42px;height:42px;border-radius:50%;border:2px solid var(--ink);background:var(--white);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0;box-shadow:2px 2px 0 var(--ink)}
+.icon-btn svg{width:19px;height:19px}
+
+.panel{position:relative;border-radius:18px;background:var(--card);border:2px solid var(--ink);padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:5px 5px 0 var(--ink)}
+.panel h2{margin:0;font:800 19px/1.2 var(--f-disp);letter-spacing:-.01em}
+.panel p{margin:0;color:var(--ink2);font-size:15.5px}
+.field{display:flex;flex-direction:column;gap:6px}
+.flabel,.field label{font:500 11px var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
+.inp{height:48px;border-radius:12px;border:2px solid var(--ink);background:var(--white);color:var(--ink);font:600 17px var(--f-disp);padding:0 12px;min-width:0;width:100%}
+.inp::placeholder{color:var(--faint);font-weight:500}
+.inp:focus{outline:none;border-color:var(--pink);box-shadow:0 0 0 3px var(--pink-soft)}
+.inp.code{text-transform:uppercase;letter-spacing:.3em;font:500 19px var(--f-mono)}
+.joinrow,.sendrow{display:grid;grid-template-columns:1fr auto;gap:8px}
+.btn{height:48px;border-radius:12px;border:2px solid var(--ink);background:var(--white);color:var(--ink);font:800 15px var(--f-disp);padding:0 16px;cursor:pointer;white-space:nowrap;box-shadow:3px 3px 0 var(--ink);transition:transform .08s,box-shadow .08s,background .15s}
+.btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn.go{background:var(--pink)}
+.btn.sm{height:38px;padding:0 12px;font-size:13.5px;box-shadow:2px 2px 0 var(--ink)}
+.btn:disabled{opacity:.4;cursor:default;box-shadow:none}
+.or{display:flex;align-items:center;gap:10px;color:var(--faint);font:500 12px var(--f-mono);text-transform:uppercase;letter-spacing:.1em}
+.or::before,.or::after{content:"";flex:1;height:2px;background:repeating-linear-gradient(90deg,var(--ink) 0 4px,transparent 4px 8px);opacity:.35}
+.lmsg{font-size:14.5px;color:#C2185B!important;font-weight:600}
+.lmsg:empty{display:none}
+.conn{display:flex;align-items:flex-start;gap:8px;font:400 13px var(--f-mono);color:var(--ink2)}
+.conn::before{content:"";flex:none;width:8px;height:8px;margin-top:5px;border-radius:50%;border:1.5px solid var(--ink);background:var(--faint)}
+.conn[data-k="ok"]::before{background:#2BC48A}
+.conn[data-k="bad"]{color:#C2185B}.conn[data-k="bad"]::before{background:var(--pink)}
+.conn[data-k="wait"]::before{background:var(--sun)}
+
+.roombar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.rcode small{display:block;font:500 10.5px var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink2)}
+.rcode b{font:500 28px/1.1 var(--f-mono);letter-spacing:.2em}
+.rcode .x{display:inline-block;vertical-align:middle;margin-left:6px;font:800 11px var(--f-disp);letter-spacing:0;padding:2px 7px;border-radius:999px;background:var(--pink);border:2px solid var(--ink);transform:rotate(-6deg)}
+.rbtns{display:flex;gap:8px}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:3px;border-radius:13px;background:var(--white);border:2px solid var(--ink)}
+.seg button{height:38px;border:0;border-radius:9px;background:transparent;color:var(--ink2);font:700 14px var(--f-disp);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.seg button:disabled{cursor:default}
+.seg button:disabled:not([aria-pressed="true"]){opacity:.5}
+.hint{font-size:15px;color:var(--ink2);margin:0}
+.hint.bad{color:#C2185B;font-weight:600}
+.mix{display:flex;flex-wrap:wrap;gap:6px}
+.mix span{font:500 12.5px var(--f-mono);padding:3px 10px;border-radius:999px;border:2px solid var(--ink);background:var(--white)}
+.mix .c{background:var(--blue-soft)}.mix .u{background:var(--pink-soft)}.mix .w{border-style:dashed}
+
+/* round banner */
+.phase{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:14px 16px}
+.badge{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--ink);background:var(--blue);color:var(--white);font:800 22px var(--f-disp);box-shadow:2px 2px 0 var(--pink)}
+.badge.vote{background:var(--pink);color:var(--ink);box-shadow:2px 2px 0 var(--blue)}
+.badge.white{background:var(--white);color:var(--ink)}
+.ptitle{font:800 23px/1.05 var(--f-disp);letter-spacing:-.02em}
+.psub{font-size:14.5px;color:var(--ink2)}
+.timer{font:500 25px var(--f-mono);font-variant-numeric:tabular-nums;min-width:64px;text-align:right}
+.timer.low{color:#E0245E;animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.08)}}
+.bar{grid-column:1/-1;height:8px;border-radius:8px;border:2px solid var(--ink);background:var(--white);overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:var(--sun);transform-origin:left;transition:transform 1s linear}
+
+/* word card: face down until tapped */
+.wordcard{position:relative;border-radius:18px;cursor:pointer;perspective:900px;border:0;padding:0;background:none;color:inherit;font:inherit;text-align:center;width:100%}
+.wc-inner{position:relative;display:grid;width:100%;min-height:150px;transition:transform .5s cubic-bezier(.3,.7,.2,1);transform-style:preserve-3d}
+.wordcard.open .wc-inner{transform:rotateY(180deg)}
+.wc-face{grid-area:1/1;position:relative;border-radius:18px;backface-visibility:hidden;-webkit-backface-visibility:hidden;padding:18px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:2px solid var(--ink);box-shadow:5px 5px 0 var(--ink)}
+.wc-back{background:radial-gradient(rgba(255,255,255,.4) 1.6px, transparent 2px) 0 0/11px 11px, var(--pink)}
+.wc-back b{font:800 24px var(--f-disp);letter-spacing:-.02em}
+.wc-back small{font:500 12.5px var(--f-mono);letter-spacing:.04em}
+.wc-front{transform:rotateY(180deg);background:var(--card)}
+.wc-front .lab{font:500 11px var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink2)}
+.wc-front .word{font:800 clamp(34px,11vw,52px)/1.05 var(--f-disp);letter-spacing:-.03em;color:var(--blue);text-shadow:3px 3px 0 var(--pink);overflow-wrap:anywhere}
+.wc-front .word.white{color:var(--ink);text-shadow:3px 3px 0 var(--sun)}
+.wc-front p{margin:4px 0 0;font-size:14px;color:var(--ink2);max-width:36ch;line-height:1.4}
+@media (prefers-reduced-motion:reduce){.wc-inner,.bar i{transition:none}.timer.low{animation:none}}
+
+/* players */
+.plist{display:flex;flex-direction:column;gap:7px}
+.pr{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:10px;padding:8px 10px;border-radius:13px;border:2px solid var(--ink);background:var(--white);color:inherit;font:inherit;text-align:left;width:100%;transition:background .15s,box-shadow .15s,transform .08s}
+button.pr{cursor:pointer}
+button.pr:active:not(:disabled){transform:translate(1px,1px)}
+button.pr:disabled{cursor:default}
+.pr .av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font:800 16px var(--f-disp);border:2px solid var(--ink)}
+.av.a0{background:var(--blue-soft)}.av.a1{background:var(--pink-soft)}.av.a2{background:var(--sun-soft)}.av.a3{background:var(--mint-soft)}
+.pr .nm{font-weight:700;font-size:16.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.pr .sub{display:block;font-size:13.5px;color:var(--ink2)}
+.pr .tags{display:flex;gap:6px;align-items:center}
+.tag{font:500 10.5px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1.5px solid var(--ink);background:var(--white);white-space:nowrap}
+.tag.c{background:var(--blue-soft)}.tag.u{background:var(--pink-soft)}.tag.w{border-style:dashed}
+.tag.host{background:var(--sun-soft)}.tag.speak{background:var(--sun)}.tag.off{color:var(--faint);border-color:var(--faint)}
+.votes{font:800 21px var(--f-disp);min-width:22px;text-align:right}
+.pr.me .nm{color:var(--blue)}
+.pr.off{opacity:.6}
+.pr.cur{background:var(--sun-soft);box-shadow:3px 3px 0 var(--ink)}
+.pr.sel{background:var(--pink-soft);box-shadow:3px 3px 0 var(--ink)}
+.pr.gone{opacity:.55;background:transparent}.pr.gone .nm{text-decoration:line-through;text-decoration-color:var(--pink);text-decoration-thickness:2px}
+.clues{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.cl{font:400 13px/1.5 var(--f-mono);padding:0 7px;border-radius:6px;background:var(--paper);border:1.5px solid rgba(34,30,59,.22);overflow-wrap:anywhere}
+.cl i{font-style:normal;color:var(--faint);margin-right:5px}
+.cl.now{background:var(--sun);border-color:var(--ink)}
+.cl.miss{color:var(--faint);font-style:italic}
+.cl.wd{background:var(--white);border-color:var(--ink);font-weight:500}
+
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.acts .btn{flex:1}
+.ready{font:400 13px var(--f-mono);color:var(--ink2);text-align:center;margin:0}
+.ready:empty{display:none}
+
+.winner{text-align:center;padding:22px 16px}
+.winner h2{font:800 30px/1.1 var(--f-disp);letter-spacing:-.03em}
+.winner.c{background:var(--blue-soft)}.winner.u{background:var(--pink-soft)}.winner.w{background:var(--sun-soft)}
+.winner p{color:var(--ink)!important}
+.words{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.words div{border:2px solid var(--ink);border-radius:14px;padding:10px 12px;background:var(--white)}
+.words div:first-child{background:var(--blue-soft)}.words div:last-child{background:var(--pink-soft)}
+.words small{display:block;font:500 10.5px var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
+.words b{font:800 22px/1.15 var(--f-disp);letter-spacing:-.02em;overflow-wrap:anywhere}
+
+.log{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+.log li{font-size:15px;line-height:1.45;padding-left:12px;border-left:3px solid var(--faint)}
+.log li.k{border-left-color:var(--pink)}
+.log small{display:block;font:500 10.5px var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
+
+details.rules{font-size:15px;color:var(--ink2)}
+details.rules summary{cursor:pointer;color:var(--ink);font:800 16px var(--f-disp)}
+details.rules ul{margin:10px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+details.rules b{color:var(--ink)}
+.credit{text-align:center;font:400 12.5px var(--f-mono);color:var(--faint);padding-top:2px}
+.credit a{color:var(--ink2)}
+.credit a:hover{color:var(--pink)}
+</style>
+<script src="analytics.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 class="mark">Blend <span>In</span></h1>
+    <button class="icon-btn" id="sound" type="button"></button>
+  </header>
+
+  <section class="panel" id="lobby">
+    <h2>Everyone gets the same secret word. Almost everyone.</h2>
+    <p>Give clues, spot who doesn't fit, and if the odd word is yours, blend in. 3 to 12 players, each on their own phone.</p>
+    <div class="field"><label for="nick">Your name</label><input class="inp" id="nick" maxlength="16" autocomplete="nickname" placeholder="e.g. Nate"></div>
+    <button class="btn go" id="create" type="button" disabled>Create a room</button>
+    <div class="or">or join one</div>
+    <div class="joinrow">
+      <input class="inp code" id="codeIn" maxlength="4" placeholder="CODE" aria-label="Room code" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <button class="btn" id="join" type="button" disabled>Join</button>
+    </div>
+    <p class="lmsg" id="lmsg" role="status"></p>
+    <p class="conn" data-k="wait">Connecting…</p>
+  </section>
+
+  <section id="room" hidden>
+    <div class="wrap">
+      <div class="panel">
+        <div class="roombar">
+          <div class="rcode"><small>Room code</small><b id="rcode"></b><span class="x" id="adultTag" hidden>21+</span></div>
+          <div class="rbtns"><button class="btn sm" id="invite" type="button">Invite</button><button class="btn sm" id="leave" type="button">Leave</button></div>
+        </div>
+        <p class="conn" data-k="wait">Connecting…</p>
+      </div>
+
+      <div id="game" hidden>
+        <div class="wrap">
+          <div class="panel phase">
+            <div class="badge" id="badge" aria-hidden="true"></div>
+            <div><div class="ptitle" id="ptitle"></div><div class="psub" id="psub"></div></div>
+            <div class="timer" id="timer"></div>
+            <div class="bar"><i id="bar"></i></div>
+          </div>
+
+          <div class="panel winner" id="winner" hidden><h2 id="winTitle"></h2><p id="winText"></p></div>
+          <div class="words" id="words" hidden><div><small>Civilians' word</small><b id="wordC"></b></div><div><small>Undercover's word</small><b id="wordU"></b></div></div>
+
+          <button class="wordcard" id="wordcard" type="button" hidden aria-label="Your secret word. Tap to show or hide.">
+            <div class="wc-inner">
+              <div class="wc-face wc-back"><b>Your word</b><small>Tap to peek · keep it hidden</small></div>
+              <div class="wc-face wc-front" id="wcFront"></div>
+            </div>
+          </button>
+
+          <div class="panel" id="actionP">
+            <h2 id="actTitle"></h2>
+            <p class="hint" id="actHint"></p>
+            <div class="sendrow" id="clueBox" hidden>
+              <input class="inp" id="clueIn" maxlength="30" placeholder="Your clue" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" aria-label="Your clue">
+              <button class="btn go" id="clueSend" type="button">Send</button>
+            </div>
+            <div class="sendrow" id="guessBox" hidden>
+              <input class="inp" id="guessIn" maxlength="30" placeholder="The civilians' word" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" aria-label="Your guess">
+              <button class="btn go" id="guessSend" type="button">Guess</button>
+            </div>
+            <div class="plist" id="plist"></div>
+            <div class="acts" id="acts"></div>
+            <p class="ready" id="ready"></p>
+          </div>
+
+          <div class="panel" id="logP" hidden>
+            <h2>So far</h2>
+            <ol class="log" id="log"></ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="setup">
+        <h2 id="setupTitle">Who's playing</h2>
+        <div class="plist" id="lineup"></div>
+        <div class="field">
+          <span class="flabel">Words</span>
+          <div class="seg" id="langSeg"><button type="button" data-lang="id">Bahasa Indonesia</button><button type="button" data-lang="en">English</button></div>
+        </div>
+        <div class="field">
+          <span class="flabel">Content</span>
+          <div class="seg" id="adultSeg"><button type="button" data-adult="0">Normal</button><button type="button" data-adult="1">21+</button></div>
+        </div>
+        <div class="field">
+          <span class="flabel">Mr. White (no word at all)</span>
+          <div class="seg" id="whiteSeg"><button type="button" data-white="1">On</button><button type="button" data-white="0">Off</button></div>
+        </div>
+        <div class="mix" id="mix"></div>
+        <p class="hint" id="setupMsg"></p>
+        <button class="btn go" id="start" type="button">Deal the words</button>
+      </div>
+    </div>
+  </section>
+
+  <details class="rules panel">
+    <summary>How to play</summary>
+    <ul>
+      <li>Everyone gets a secret word. Most players share the same one: they're the <b>Civilians</b>.</li>
+      <li>The <b>Undercover</b> gets a similar but different word, like Coffee and Tea, and doesn't know they're the Undercover. <b>Mr. White</b> gets no word at all, and knows it.</li>
+      <li>Take turns giving one short clue about your word, without saying it. Too vague and you look suspicious; too clear and the Undercover catches on.</li>
+      <li>After everyone has given a clue, vote out who you think has a different word. Most votes goes; a tie means nobody.</li>
+      <li>If Mr. White is voted out, they get one guess at the Civilians' word. Right means Mr. White wins.</li>
+      <li>Civilians win when every Undercover and Mr. White is out. The Undercover side wins if they last until only one Civilian is left.</li>
+      <li><b>21+</b> uses adult word pairs. Only with friends who are into it.</li>
+    </ul>
+  </details>
+  <footer class="credit">Made by <a href="https://github.com/granodioritee" target="_blank" rel="noopener">granodioritee</a> · <a href="https://github.com/granodioritee/blend-in" target="_blank" rel="noopener" id="starLink">⭐ Star on GitHub</a></footer>
+</div>
+
+<script src="firebase-config.js"></script>
+<script>
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+/* analytics.js defines gaEvent; if it's blocked, tracking quietly does nothing */
+const track = (name, params) => { try { if(window.gaEvent) window.gaEvent(name, params); } catch(e){} };
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+const CTRL_RE = new RegExp("[\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u200b-\\u200f\\u2028-\\u202e\\u2060-\\u206f\\ufeff]", "g");
+const cleanText = (s, max) => String(s == null ? "" : s).replace(CTRL_RE, "").replace(/\s+/g, " ").trim().slice(0, max);
+const cleanName = s => cleanText(s, 16);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c]);
+/* words are compared squashed: lower case, letters and digits only, so "Es Krim", "es-krim" and "eskrim" all match */
+const norm = s => String(s || "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "");
+
+/* ---------- word pairs: "a/b" separated by "|". Each game picks one pair and flips a coin for which is the civilians' word ---------- */
+const PAIRS = {
+  id: "Kopi/Teh|Bakso/Mie Ayam|Nasi Goreng/Mie Goreng|Sate/Kebab|Martabak/Roti Bakar|Seblak/Cilok|Cireng/Cimol|Rendang/Semur|Soto/Rawon|Gado Gado/Pecel|Es Teh/Es Jeruk|Boba/Es Kopi Susu|Bubur Ayam/Lontong Sayur|Durian/Nangka|Mangga/Pepaya|Semangka/Melon|Apel/Pir|Jeruk/Lemon|Tahu/Tempe|Ayam Geprek/Ayam Bakar|Pizza/Burger|Sushi/Ramen|Donat/Croissant|Klepon/Onde Onde|Es Krim/Puding|Coklat/Permen|Susu/Yogurt|Sambal/Kecap|Nasi Uduk/Nasi Kuning|Lontong/Ketupat|Kerupuk/Rempeyek|Jamu/Wedang Jahe|Pisang Goreng/Bakwan|Mie Instan/Bihun|Pempek/Otak Otak|Siomay/Batagor|Gudeg/Opor|Kolak/Es Campur"
+    + "|Pantai/Kolam Renang|Gunung/Air Terjun|Mall/Pasar|Bioskop/Teater|Rumah Sakit/Puskesmas|Sekolah/Kampus|Kos/Kontrakan|Bandara/Stasiun|Kafe/Warkop|Minimarket/Warung|Kantor/Coworking|Bali/Lombok|Jogja/Solo|Hotel/Villa|Kebun Binatang/Akuarium|Gym/Lapangan|Perpustakaan/Toko Buku|Salon/Barbershop|Pom Bensin/Bengkel|Taman/Hutan|Penjara/Kantor Polisi"
+    + "|Ojol/Taksi|Motor/Sepeda|Kereta/Bus|Pesawat/Helikopter|Kapal/Perahu|Angkot/Bajaj|Lift/Eskalator|Becak/Delman|Skateboard/Sepatu Roda|Roket/Satelit"
+    + "|HP/Tablet|Laptop/Komputer|Headset/Speaker|Kipas Angin/AC|Bantal/Guling|Selimut/Sarung|Sandal/Sepatu|Payung/Jas Hujan|Kacamata/Lensa Kontak|Jam Tangan/Gelang|Dompet/Tas|Sikat Gigi/Pasta Gigi|Sabun/Sampo|Sisir/Catokan|Kulkas/Dispenser|Kompor/Oven|Sendok/Garpu|Gelas/Cangkir|Piring/Mangkok|Pulpen/Pensil|Buku/Majalah|Gunting/Pisau|Lilin/Senter|Kunci/Gembok|Cermin/Jendela|Kasur/Sofa|Powerbank/Charger|Remote/Joystick|Kamera/Teropong|Ransel/Koper"
+    + "|Kucing/Anjing|Harimau/Singa|Kuda/Zebra|Gajah/Badak|Ayam/Bebek|Ular/Kadal|Lumba Lumba/Hiu|Nyamuk/Lalat|Kupu Kupu/Capung|Monyet/Gorila|Kelinci/Hamster|Kecoa/Tikus|Burung Hantu/Elang|Kura Kura/Siput|Komodo/Buaya|Lebah/Tawon|Semut/Rayap|Pinguin/Anjing Laut"
+    + "|Dokter/Perawat|Guru/Dosen|Polisi/Satpam|Pilot/Pramugari|Koki/Pelayan|Youtuber/Selebgram|Penyanyi/Penari|Kakek/Nenek|Om/Tante|Bos/Karyawan|Kakak/Adik|Pacar/Gebetan|Pocong/Kuntilanak|Tuyul/Genderuwo"
+    + "|Sepak Bola/Futsal|Badminton/Tenis|Renang/Surfing|Catur/Monopoli|Karaoke/Konser|Ulang Tahun/Kondangan|Arisan/Reuni|Begadang/Lembur|Mudik/Liburan|Mancing/Camping|Lari Pagi/Senam|Tidur Siang/Rebahan"
+    + "|Hujan/Banjir|Matahari/Bulan|Bintang/Komet|Petir/Gempa|Salju/Es Batu|Sinetron/Drakor|Dangdut/Kpop|TikTok/Instagram|WhatsApp/Telegram|Shopee/Tokopedia|Netflix/YouTube|Batman/Superman|Spiderman/Iron Man|Doraemon/Shinchan|Batik/Kebaya|Wayang/Ondel Ondel|Angklung/Gamelan|Gitar/Ukulele|Drum/Gendang|Pantun/Puisi",
+  en: "Coffee/Tea|Pizza/Burger|Sushi/Ramen|Pancake/Waffle|Donut/Bagel|Cupcake/Muffin|Ice Cream/Frozen Yogurt|Chocolate/Candy|Milk/Yogurt|Ketchup/Mustard|Apple/Pear|Orange/Lemon|Strawberry/Cherry|Watermelon/Melon|Banana/Mango|Fries/Chips|Popcorn/Nachos|Juice/Soda|Taco/Burrito|Hot Dog/Sandwich|Cake/Pie|Salad/Soup|Bread/Rice|Noodles/Spaghetti|Cheese/Butter|Honey/Syrup"
+    + "|Beach/Pool|Mountain/Volcano|Forest/Jungle|River/Lake|Mall/Market|Cinema/Theater|Hospital/Clinic|School/University|Airport/Train Station|Hotel/Hostel|Library/Bookstore|Gym/Stadium|Zoo/Aquarium|Museum/Gallery|Restaurant/Cafe|Office/Classroom|Prison/Police Station|Farm/Garden|Castle/Palace|Hair Salon/Barbershop"
+    + "|Car/Truck|Bike/Scooter|Train/Subway|Plane/Helicopter|Boat/Submarine|Taxi/Bus|Elevator/Escalator|Rocket/Satellite|Skateboard/Roller Skates"
+    + "|Phone/Tablet|Laptop/Desktop|Headphones/Earbuds|TV/Projector|Camera/Binoculars|Fan/Air Conditioner|Pillow/Blanket|Bed/Sofa|Sneakers/Boots|Umbrella/Raincoat|Glasses/Sunglasses|Watch/Bracelet|Wallet/Purse|Backpack/Suitcase|Toothbrush/Toothpaste|Soap/Shampoo|Towel/Bathrobe|Comb/Hairdryer|Fridge/Freezer|Oven/Microwave|Spoon/Fork|Cup/Mug|Plate/Bowl|Pen/Pencil|Book/Magazine|Scissors/Knife|Candle/Flashlight|Key/Lock|Mirror/Window|Charger/Power Bank|Remote/Controller"
+    + "|Cat/Dog|Tiger/Lion|Horse/Zebra|Elephant/Rhino|Chicken/Duck|Snake/Lizard|Dolphin/Shark|Mosquito/Fly|Butterfly/Moth|Monkey/Gorilla|Rabbit/Hamster|Owl/Eagle|Turtle/Snail|Penguin/Seal|Bee/Wasp|Ant/Spider|Dragon/Dinosaur"
+    + "|Doctor/Nurse|Teacher/Professor|Police/Security Guard|Pilot/Flight Attendant|Chef/Waiter|YouTuber/Influencer|Singer/Dancer|Grandpa/Grandma|Boss/Intern|Boyfriend/Crush"
+    + "|Soccer/Hockey|Tennis/Badminton|Swimming/Surfing|Chess/Checkers|Karaoke/Concert|Birthday/Wedding|Vacation/Road Trip|Party/Reunion|Camping/Fishing|Jogging/Yoga|Nap/Bedtime"
+    + "|Rain/Snow|Thunder/Earthquake|Sun/Moon|Star/Comet|Rainbow/Sunset|Netflix/YouTube|TikTok/Instagram|WhatsApp/Telegram|Batman/Superman|Spiderman/Iron Man|Guitar/Ukulele|Drums/Piano|Ghost/Zombie|Vampire/Werewolf|Pirate/Ninja|Wizard/Witch|King/Prince|Angel/Fairy|Robot/Alien|Gold/Silver|Diamond/Pearl|Poem/Song",
+};
+/* 21+ pairs: crude on purpose (sex, booze, vices, slang), but no slurs and nothing non-consensual */
+const PAIRS21 = {
+  id: "Kondom/Pil KB|Beha/Sempak|Lingerie/Bikini|Ciuman/Cupang|Pelukan/Pijat Plus|Selingkuhan/Mantan|Pelakor/Simpanan|Janda/Duda|Perawan/Perjaka|Malam Pertama/Bulan Madu|Motel/Hotel Melati|Bir/Anggur Merah|Vodka/Tequila|Arak/Tuak|Mabuk/Teler|Hangover/Masuk Angin|Klub Malam/Karaoke Plus|Striptis/Pole Dance|Borgol/Penutup Mata|Pelumas/Baby Oil|Tespek/Bidan|Doggy/Cowgirl|Misionaris/Enam Sembilan|Vibrator/Dildo|Threesome/Orgi|FWB/One Night Stand|Sleep Call/VCS|Bokep/Hentai|Coli/Colmek|Oral/Anal|Toket/Pantat|Terong/Timun|Pepaya/Melon|Sosis/Pisang|Klimaks/Ereksi|Viagra/Jamu Kuat|Sange/Mupeng|Sugar Daddy/Tante Girang|Berondong/Gigolo|Mandi Bareng/Sauna|Staycation/Check In|Kumpul Kebo/Nikah Siri|Grebek/Razia|Judol/Pinjol|Rokok/Vape|Shisha/Cerutu|Pelet/Susuk|Pesugihan/Babi Ngepet|Telanjang/Topless|Desahan/Erangan|Mimpi Basah/Fantasi|Quickie/Pemanasan|Kontol/Titit|Memek/Apem|Nyepong/Jilat|Puting/Pusar|Bulu Ketiak/Jembut|Pap/Sexting|PDKT/Modus|Baper/Bucin|Friendzone/Ghosting|Spanking/Cambuk|Selangkangan/Ketiak|Mobil Goyang/Kamar Kos",
+  en: "Condom/Birth Control|Bra/Thong|Lingerie/Bikini|Kiss/Hickey|Cuddle/Massage|Ex/Situationship|Affair/Hookup|Sugar Baby/Mistress|Cougar/Sugar Daddy|Wedding Night/Honeymoon|Beer/Wine|Vodka/Tequila|Whiskey/Rum|Hangover/Food Poisoning|Shots/Beer Pong|Drunk/Tipsy|Strip Club/Nightclub|Stripper/Pole Dancer|Lap Dance/Twerk|Handcuffs/Blindfold|Whip/Paddle|Lube/Massage Oil|Pregnancy Test/Morning After Pill|Doggy Style/Cowgirl|Missionary/Sixty Nine|Vibrator/Dildo|Threesome/Orgy|Swinger/Open Relationship|Friends With Benefits/One Night Stand|Booty Call/Sexting|Nudes/Dick Pic|Porn/Webcam|Blowjob/Handjob|Boobs/Butt|Eggplant/Peach|Banana/Cucumber|Melons/Coconuts|Horny/Thirsty|Orgasm/Afterglow|Foreplay/Quickie|Walk of Shame/Morning After|Skinny Dipping/Hot Tub|Strip Poker/Truth or Dare|Spin the Bottle/Seven Minutes in Heaven|Shower Sex/Car Sex|Moan/Scream|Spank/Tickle|Dom/Sub|Safeword/Bondage|Nipples/Belly Button|Dick/Balls|Weed/Cigarette|Joint/Cigar|Dating App/Blind Date|Rizz/Simp|Wingman/Third Wheel|Bachelor Party/Bachelorette Party|Vegas/Ibiza|Tattoo/Piercing|Pillow Talk/Dirty Talk|Netflix and Chill/Sleepover|Viagra/Energy Drink|Motel/Backseat",
+};
+const pairsOf = s => s.split("|").map(p => p.split("/"));
+/* the host's phone remembers recent pairs so the same one doesn't come up twice in a night */
+function pickPair(lang, adult){
+  const list = pairsOf((adult ? PAIRS21 : PAIRS)[lang]);
+  const recent = store.get("bi-recent", []);
+  const fresh = list.filter(p => !recent.includes(norm(p[0] + p[1])));
+  const pool = fresh.length ? fresh : list;
+  const p = pool[Math.floor(Math.random() * pool.length)];
+  store.set("bi-recent", [norm(p[0] + p[1]), ...recent].slice(0, 60));
+  return Math.random() < .5 ? p : [p[1], p[0]];
+}
+
+const ROLE = {
+  c:{ name:"Civilian", many:"Civilians" },
+  u:{ name:"Undercover", many:"Undercovers" },
+  w:{ name:"Mr. White", many:"Mr. Whites" },
+};
+const roleTag = r => r && ROLE[r] ? `<span class="tag ${r}">${ROLE[r].name}</span>` : "";
+const WHITE = "#"; /* Mr. White's slot in the deck */
+
+const MIN_PLAYERS = 3, MAX_PLAYERS = 12, CLUE_MAX = 30;
+const DEAL_MS = 25000, MIN_DEAL_MS = 4000, TURN_MS = 45000, OFF_TURN_MS = 6000, VOTE_MS = 120000, WHITE_MS = 45000;
+const undercoversFor = n => n >= 10 ? 3 : n >= 7 ? 2 : 1;
+const whiteFor = (n, on) => on && n >= 5 ? 1 : 0;
+
+/* ---------- sound (synthesised, no files) ---------- */
+let soundOn = store.get("bi-sound", true);
+const S = (() => {
+  let ctx = null, master = null;
+  function init(){
+    if(!ctx){ const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return; ctx = new AC(); master = ctx.createGain(); master.gain.value = .7; master.connect(ctx.destination); }
+    /* iOS parks the context as "interrupted" (not "suspended") after a call or switching apps */
+    if(ctx.state !== "running") ctx.resume().catch(() => {});
+  }
+  function tone(f, dur, o = {}){
+    if(!ctx || !soundOn) return;
+    const { type="sine", vol=.2, at=0, to=null, attack=.01 } = o;
+    const t = ctx.currentTime + at, osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(f, t);
+    if(to) osc.frequency.exponentialRampToValueAtTime(to, t + dur * .8);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + attack); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    osc.connect(g); g.connect(master); osc.start(t); osc.stop(t + dur + .05);
+  }
+  return {
+    init,
+    tap(){ tone(660,.07,{type:"triangle",vol:.1}); },
+    pop(){ tone(700,.12,{vol:.14,to:1250}); },
+    turn(){ [523,659,784,1047].forEach((f,i) => tone(f,.22,{type:"triangle",vol:.12,at:i*.08})); },
+    round(){ tone(392,.25,{type:"triangle",vol:.12}); tone(587,.35,{type:"triangle",vol:.12,at:.12}); },
+    gong(){ tone(196,1.1,{type:"triangle",vol:.16}); tone(294,.8,{vol:.06,at:.02}); },
+    out(){ [523,392,262].forEach((f,i) => tone(f,.3,{type:"square",vol:.05,at:i*.13})); },
+    tick(){ tone(1100,.04,{type:"square",vol:.04}); },
+    vote(){ tone(330,.1,{type:"triangle",vol:.12}); },
+    win(){ [523,659,784,1047,1319].forEach((f,i) => tone(f,.5,{type:"triangle",vol:.12,at:i*.1})); },
+    lose(){ [392,370,349,262].forEach((f,i) => tone(f,.5,{type:"sawtooth",vol:.04,at:i*.18})); },
+    join(){ tone(523,.15,{vol:.1}); tone(784,.25,{vol:.08,at:.1}); },
+  };
+})();
+/* Safari on a Mac only lets audio start from mousedown/click, not pointerdown, so listen for click too */
+["pointerdown","touchend","keydown","click"].forEach(e => document.addEventListener(e, () => S.init(), { capture:true, passive:true }));
+const ICON_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+const ICON_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="m16 9 6 6M22 9l-6 6"/></svg>';
+function paintSound(){ const b = $("#sound"); b.innerHTML = soundOn ? ICON_ON : ICON_OFF; b.setAttribute("aria-pressed", String(soundOn)); b.setAttribute("aria-label", soundOn ? "Sound on" : "Sound off"); }
+
+/* ---------- multiplayer (Firebase Realtime Database) ----------
+   bi/{code}/info, players/{uid} {name, joinedAt}, cfg {lang, adult, white}
+   bi/{code}/game                  { id, players{uid: name}, order[uids], size, u, w, lang, adult, by, at }
+   bi/{code}/deck/{g}/{slot}       the slot's word, or "#" for Mr. White; readable only by whoever claimed that slot
+   bi/{code}/deckr/{g}/{slot}      the slot's role c|u|w; nobody can read it (so the Undercover never learns it), the rules use it
+   bi/{code}/word/{g}              the civilians' word, squashed; unreadable, checks Mr. White's guess
+   bi/{code}/claim/{g}/{slot}      uid, and seat/{g}/{uid} = slot: written together, readable only by that player
+   bi/{code}/phase/{g}             { n, stage: deal|talk|vote|white|over, startedAt, endsAt, turn, speaker, white }
+   bi/{code}/done/{g}/0/{uid}      "I've seen my word"
+   bi/{code}/clue/{g}/{n}/{uid}    only the current speaker can write one
+   bi/{code}/vote/{g}/{n}/{uid}, res/{g}/{n}, out/{g}/{uid} = n, role/{g}/{uid} (checked against deckr)
+   bi/{code}/guess/{g} {k, t}, gres/{g} (checked against word), over/{g} {winner c|u|w}, show/{g}/{uid} (own word, at the end)
+   The game moves forward from whichever online player has the lowest uid ("duty"). A role is found by trying each
+   possibility in a transaction that doesn't show locally; the rules accept only the true one. */
+const FB_VER = "10.12.2", FB_BASE = `https://www.gstatic.com/firebasejs/${FB_VER}`;
+/* ?seat in the URL keeps the player per browser tab, so several seats can be tested from one device */
+const SEAT = new URLSearchParams(location.search).has("seat");
+let F = null, fbState = "loading", uid = null, connOK = false, offset = 0;
+let code = "", inRoom = false, myRef = null, myName = "", myJoinedAt = 0;
+let players = {}, cfg = { lang:"id", adult:false, white:true }, game = null, subs = [];
+let G = blank();
+let ui = { cardOpen:false, cardTimer:null, phaseKey:"", lastTick:-1, clues:null, outs:null, focusKey:"" };
+let busy = false;
+const serverNow = () => Date.now() + offset;
+
+function blank(){
+  return { phase:null, done:{}, clues:{}, votes:{}, res:{}, out:{}, roles:{}, guess:null, gres:null, over:null, show:{},
+           slot:null, word:null, subs:[], claiming:false, readySent:false, showSent:false, ended:false };
+}
+const val = (o, k) => o == null ? undefined : o[k];
+
+async function initFirebase(){
+  const cfgFB = window.FIREBASE_CONFIG;
+  if(!cfgFB || !cfgFB.apiKey || /PASTE/i.test(cfgFB.apiKey) || !cfgFB.databaseURL){ fbState = "unconfigured"; paintConn(); return; }
+  try {
+    const [appM, authM, dbM] = await Promise.all([
+      import(`${FB_BASE}/firebase-app.js`), import(`${FB_BASE}/firebase-auth.js`), import(`${FB_BASE}/firebase-database.js`)
+    ]);
+    const app = appM.initializeApp(cfgFB);
+    const auth = authM.getAuth(app);
+    if(SEAT) await authM.setPersistence(auth, authM.browserSessionPersistence);
+    const cred = await authM.signInAnonymously(auth);
+    uid = cred.user.uid;
+    const db = dbM.getDatabase(app);
+    F = Object.assign({ db }, dbM);
+    F.onValue(F.ref(db, ".info/serverTimeOffset"), s => { offset = Number(s.val()) || 0; });
+    F.onValue(F.ref(db, ".info/connected"), s => { connOK = !!s.val(); if(connOK) rejoinPresence(); paintConn(); });
+    fbState = "ready"; paintConn();
+  } catch(e){
+    console.error(e); fbState = "error"; paintConn();
+  }
+}
+
+function paintConn(){
+  let t, k;
+  if(fbState === "loading"){ t = "Connecting…"; k = "wait"; }
+  else if(fbState === "unconfigured"){ t = "Online play isn't set up yet: add your Firebase settings to firebase-config.js."; k = "bad"; }
+  else if(fbState === "error"){ t = "Couldn't reach the game server. Check your connection and reload."; k = "bad"; }
+  else if(!connOK){ t = "Offline. Reconnecting…"; k = "wait"; }
+  else if(inRoom){ const n = Object.keys(players).length; t = `Online · ${n} ${n === 1 ? "player" : "players"} in this room`; k = "ok"; }
+  else { t = "Online and ready"; k = "ok"; }
+  $$(".conn").forEach(el => { el.textContent = t; el.dataset.k = k; });
+  $("#create").disabled = fbState !== "ready"; $("#join").disabled = fbState !== "ready";
+}
+
+function setLobbyMsg(t){ $("#lmsg").textContent = t; }
+function genCode(){ const a = "abcdefghjkmnpqrstuvwxyz23456789"; let s = ""; for(let i = 0; i < 4; i++) s += a[Math.floor(Math.random() * a.length)]; return s; }
+const path = p => `bi/${code}/${p}`;
+const R = p => F.ref(F.db, path(p));
+function history_replace(h){ try { window.history.replaceState(null, "", h); } catch(e){} }
+function shuffle(a){ for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const errWhy = e => String((e && (e.code || e.message)) || "").slice(0, 60);
+
+async function joinRoom(c, create){
+  if(fbState !== "ready"){ paintConn(); return; }
+  const nm = cleanName($("#nick").value);
+  if(!nm){ setLobbyMsg("Add your name first so your friends know who you are."); $("#nick").focus(); return; }
+  store.set("bi-nick", nm); setLobbyMsg("");
+  $("#create").disabled = true; $("#join").disabled = true;
+  try {
+    let snap = await F.get(F.ref(F.db, `bi/${c}/info`));
+    if(create){
+      for(let n = 0; snap.exists() && n < 5; n++){ c = genCode(); snap = await F.get(F.ref(F.db, `bi/${c}/info`)); }
+      await F.set(F.ref(F.db, `bi/${c}/info`), { by:uid, createdAt:F.serverTimestamp() });
+    } else if(!snap.exists()){
+      setLobbyMsg(`There's no room called ${c.toUpperCase()}. Check the code with your friend.`); paintConn(); return;
+    }
+    code = c; myName = nm; myJoinedAt = 0;
+    myRef = R(`players/${uid}`);
+    await F.set(myRef, { name:nm, joinedAt:F.serverTimestamp() });
+  } catch(e){
+    console.error(e); code = ""; myRef = null;
+    const why = errWhy(e);
+    setLobbyMsg(`Couldn't join the room${why ? ` (${why})` : ""}. Try again in a moment.`); paintConn(); return;
+  }
+  F.onDisconnect(myRef).remove();
+  inRoom = true;
+  if(location.hash.slice(1).toLowerCase() !== code) history_replace(location.pathname + location.search + "#" + code);
+  subs = [
+    F.onValue(R("players"), s => onPlayers(s.val() || {})),
+    F.onValue(R("cfg"), s => { const v = s.val() || {}; cfg = { lang:v.lang === "en" ? "en" : "id", adult:v.adult === true, white:v.white !== false }; render(); }),
+    F.onValue(R("game"), s => onGame(s.val())),
+  ];
+  S.join();
+  track(create ? "room_create" : "room_join");
+  render();
+}
+
+function leaveRoom(){
+  subs.forEach(u => { try { u(); } catch(e){} }); subs = [];
+  G.subs.forEach(u => { try { u(); } catch(e){} });
+  if(myRef){ F.onDisconnect(myRef).cancel().catch(() => {}); F.remove(myRef).catch(() => {}); myRef = null; }
+  inRoom = false; code = ""; players = {}; game = null; G = blank(); ui.phaseKey = ""; ui.clues = null; ui.outs = null;
+  history_replace(location.pathname + location.search);
+  render();
+}
+
+/* phones drop the connection when the tab is backgrounded, and onDisconnect then removes our player node,
+   so put it back, with the original joinedAt, every time we reconnect */
+function rejoinPresence(){
+  if(!inRoom || !myRef) return;
+  F.onDisconnect(myRef).remove();
+  F.set(myRef, { name:myName, joinedAt:myJoinedAt || F.serverTimestamp() }).catch(e => console.error(e));
+}
+
+function onPlayers(p){
+  players = {};
+  for(const [id, v] of Object.entries(p)){
+    if(!v || typeof v !== "object") continue;
+    const nm = cleanName(v.name); if(!nm) continue;
+    players[id] = { name:nm, joinedAt:Number(v.joinedAt) || 0 };
+  }
+  if(players[uid] && !myJoinedAt) myJoinedAt = players[uid].joinedAt;
+  if(!p[uid] && connOK) rejoinPresence();
+  render();
+}
+
+function onGame(g){
+  const id = g && typeof g.id === "string" ? g.id : null;
+  const changed = (game && game.id) !== id;
+  game = id ? g : null; /* set before subscribing: cached data can fire the listeners straight away */
+  if(changed){
+    G.subs.forEach(u => { try { u(); } catch(e){} });
+    G = blank(); ui.phaseKey = ""; ui.clues = null; ui.outs = null; ui.focusKey = ""; closeCard();
+    $("#clueIn").value = ""; $("#guessIn").value = "";
+    if(id){
+      const on = (p, fn) => G.subs.push(F.onValue(R(p), s => { if(game && game.id === id){ fn(s.val()); render(); } }));
+      on(`phase/${id}`, v => { G.phase = v; });
+      on(`done/${id}`, v => { G.done = v || {}; });
+      on(`clue/${id}`, v => { G.clues = v || {}; });
+      on(`vote/${id}`, v => { G.votes = v || {}; });
+      on(`res/${id}`, v => { G.res = v || {}; });
+      on(`out/${id}`, v => { G.out = v || {}; });
+      on(`role/${id}`, v => { G.roles = v || {}; });
+      on(`guess/${id}`, v => { G.guess = v; });
+      on(`gres/${id}`, v => { G.gres = v; });
+      on(`over/${id}`, v => { G.over = v; });
+      on(`show/${id}`, v => { G.show = v || {}; });
+    }
+  }
+  ensureSeat();
+  render();
+}
+
+/* take a random free slot of the deck; claims are invisible to everyone else, so just try until one sticks */
+async function ensureSeat(){
+  if(!game || !val(game.players, uid) || G.slot || G.claiming) return;
+  const id = game.id; G.claiming = true;
+  try {
+    let slot = (await F.get(R(`seat/${id}/${uid}`))).val();
+    if(!slot){
+      for(const s of shuffle([...Array(game.size).keys()].map(i => "s" + i))){
+        try { await F.update(F.ref(F.db, `bi/${code}`), { [`claim/${id}/${s}`]:uid, [`seat/${id}/${uid}`]:s }); slot = s; break; }
+        catch(e){ /* taken, try the next one */ }
+      }
+    }
+    if(!slot || !game || game.id !== id) return;
+    const word = (await F.get(R(`deck/${id}/${slot}`))).val();
+    if(!game || game.id !== id) return;
+    G.slot = slot; G.word = word;
+  } catch(e){ console.error(e); }
+  finally { G.claiming = false; render(); }
+}
+
+/* try each possible value; the rules accept only the true one. applyLocally:false keeps wrong guesses off the screen */
+async function probe(p, candidates){
+  const ref = R(p);
+  for(const c of candidates){
+    try {
+      const res = await F.runTransaction(ref, cur => cur === null ? c : undefined, { applyLocally:false });
+      if(res.committed || res.snapshot.exists()) return res.snapshot.val();
+    } catch(e){ /* not this one */ }
+  }
+  return null;
+}
+
+/* ---------- game state helpers ---------- */
+const gameIds = () => game ? Object.keys(game.players || {}) : [];
+const orderIds = () => game && game.order ? Object.values(game.order).filter(id => val(game.players, id)) : [];
+const nameOf = id => cleanName(val(game && game.players, id)) || val(players[id], "name") || "Someone";
+const isOut = id => !!val(G.out, id);
+const aliveIds = () => orderIds().filter(id => !isOut(id));
+const inGame = () => !!(game && val(game.players, uid));
+const meAlive = () => inGame() && !isOut(uid);
+const stage = () => G.phase ? G.phase.stage : null;
+const nowN = () => G.phase ? G.phase.n : 0;
+const doneSet = n => Object.keys(val(G.done, n) || {});
+const votesOf = n => val(G.votes, n) || {};
+const clueOf = (n, id) => val(val(G.clues, n), id);
+/* speaking order for a round: the game's fixed order without the players who are out, starting one further along each round */
+function speakers(n){
+  const a = aliveIds(); if(!a.length) return a;
+  const k = (n - 1) % a.length;
+  return a.slice(k).concat(a.slice(0, k));
+}
+function winnerNow(){
+  if(!game) return null;
+  const outs = Object.keys(G.out || {});
+  if(outs.some(id => !val(G.roles, id))) return null; /* wait until every role that's out is public */
+  const civ = game.size - game.u - game.w, inf = game.u + game.w;
+  const civLeft = civ - outs.filter(id => G.roles[id] === "c").length;
+  const infLeft = inf - outs.filter(id => G.roles[id] !== "c").length;
+  if(infLeft <= 0) return "c";
+  if(civLeft <= 1) return "u";
+  return null;
+}
+function tally(vs, alive){
+  const count = {};
+  for(const id of alive){ const t = vs[id]; if(t && alive.includes(t)) count[t] = (count[t] || 0) + 1; }
+  let best = null, top = 0, tie = false;
+  for(const [t, c] of Object.entries(count)){ if(c > top){ best = t; top = c; tie = false; } else if(c === top) tie = true; }
+  return !best || tie ? "none" : best;
+}
+const onlineGameIds = () => gameIds().filter(id => players[id]);
+const amDuty = () => onlineGameIds().sort()[0] === uid;
+function hostId(){
+  const ids = Object.keys(players).sort((a, b) => (players[a].joinedAt || 0) - (players[b].joinedAt || 0) || (a < b ? -1 : 1));
+  return ids[0] || null;
+}
+const myRole = () => val(G.roles, uid) || (G.word === WHITE ? "w" : null);
+function myTeamWon(){
+  const r = val(G.roles, uid), w = G.over && G.over.winner;
+  if(!r || !w) return null;
+  return r === "c" ? w === "c" : r === "u" ? w === "u" : w === "u" || w === "w";
+}
+
+/* ---------- the game master: whoever has duty moves the game along ---------- */
+async function setPhase(from, next){
+  await F.runTransaction(R(`phase/${game.id}`), cur => (cur && cur.n === from.n && cur.stage === from.stage && (cur.turn || 0) === (from.turn || 0)) ? next : undefined);
+}
+function phaseFor(n, stageName, ms){ const now = serverNow(); return { n, stage:stageName, startedAt:now, endsAt:now + ms }; }
+function talkPhase(n, turn){ return Object.assign(phaseFor(n, "talk", TURN_MS), { turn, speaker:speakers(n)[turn] }); }
+async function finish(w){
+  if(!G.over) await F.set(R(`over/${game.id}`), { winner:w }).catch(e => console.warn(e));
+  const p = G.phase;
+  if(p && p.stage !== "over") await setPhase(p, { n:p.n, stage:"over", startedAt:serverNow(), endsAt:serverNow() });
+}
+async function step(){
+  const p = G.phase; if(!p) return;
+  const now = serverNow(), n = p.n, alive = aliveIds(), id = game.id;
+  if(G.over && p.stage !== "over") return finish(G.over.winner);
+  if(p.stage === "over"){
+    /* show everyone's role once it's over */
+    for(const x of gameIds()) if(!val(G.roles, x)) await probe(`role/${id}/${x}`, ["c", "u", "w"]);
+    return;
+  }
+  if(p.stage === "deal"){
+    const ready = doneSet(0);
+    if(gameIds().every(x => ready.includes(x)) && now - p.startedAt >= MIN_DEAL_MS) await setPhase(p, talkPhase(1, 0));
+  } else if(p.stage === "talk"){
+    const list = speakers(n), sp = p.speaker;
+    const said = !!clueOf(n, sp), gone = !players[sp] && now - p.startedAt >= OFF_TURN_MS;
+    if(!said && !gone && now < p.endsAt && list.includes(sp)) return;
+    await setPhase(p, p.turn + 1 < list.length ? talkPhase(n, p.turn + 1) : phaseFor(n, "vote", VOTE_MS));
+  } else if(p.stage === "vote"){
+    const res = val(G.res, n);
+    if(res === undefined || res === null){
+      const vs = votesOf(n);
+      if(alive.every(x => vs[x]) || now >= p.endsAt) await F.runTransaction(R(`res/${id}/${n}`), cur => cur === null ? tally(vs, alive) : undefined).catch(e => console.warn(e));
+      return;
+    }
+    if(res !== "none"){
+      if(!isOut(res)){ await F.set(R(`out/${id}/${res}`), String(n)).catch(e => console.warn(e)); return; }
+      if(!val(G.roles, res)){ await probe(`role/${id}/${res}`, ["c", "u", "w"]); return; }
+      if(G.roles[res] === "w" && G.gres == null) return setPhase(p, Object.assign(phaseFor(n, "white", WHITE_MS), { white:res }));
+    }
+    const w = winnerNow(); if(w) return finish(w);
+    await setPhase(p, talkPhase(n + 1, 0));
+  } else if(p.stage === "white"){
+    if(G.gres == null){
+      if(G.guess){ await probe(`gres/${id}`, [true, false]); return; }
+      if(now < p.endsAt) return;
+    }
+    if(G.gres === true) return finish("w");
+    const w = winnerNow(); if(w) return finish(w);
+    await setPhase(p, talkPhase(n + 1, 0));
+  }
+}
+async function advance(){
+  if(!inRoom || !game || !G.phase || busy || !amDuty()) return;
+  busy = true;
+  try { await step(); } catch(e){ console.warn(e); } finally { busy = false; }
+}
+
+/* ---------- player actions ---------- */
+function markDone(n){ if(inGame()) F.set(R(`done/${game.id}/${n}/${uid}`), true).catch(e => console.warn(e)); }
+function sendClue(){
+  const t = cleanText($("#clueIn").value, CLUE_MAX);
+  if(!t){ $("#clueIn").focus(); return; }
+  if(G.word && G.word !== WHITE && norm(t).includes(norm(G.word))){ setHint("That gives your word away. Describe it without saying it.", true); return; }
+  $("#clueSend").disabled = true;
+  F.set(R(`clue/${game.id}/${nowN()}/${uid}`), t).then(() => { $("#clueIn").value = ""; $("#clueIn").blur(); })
+    .catch(e => flashErr(e)).finally(() => { $("#clueSend").disabled = false; });
+}
+function sendGuess(){
+  const t = cleanText($("#guessIn").value, CLUE_MAX), k = norm(t);
+  if(!k){ $("#guessIn").focus(); return; }
+  $("#guessSend").disabled = true;
+  F.set(R(`guess/${game.id}`), { k, t }).then(() => { $("#guessIn").blur(); S.tap(); })
+    .catch(e => flashErr(e)).finally(() => { $("#guessSend").disabled = false; });
+}
+function castVote(id){ F.set(R(`vote/${game.id}/${nowN()}/${uid}`), id).then(() => S.vote()).catch(e => flashErr(e)); }
+function flashErr(e){ console.error(e); setHint(`That didn't go through (${errWhy(e)}). Try again.`, true); }
+function setHint(t, bad){ const el = $("#actHint"); el.textContent = t; el.classList.toggle("bad", !!bad); }
+
+function startGame(){
+  const ids = Object.keys(players), n = ids.length;
+  if(hostId() !== uid || n < MIN_PLAYERS || n > MAX_PLAYERS) return;
+  if(game && G.phase && G.phase.stage !== "over" && !confirm("Start a new game? The current one will end.")) return;
+  const id = "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6).padEnd(4, "0");
+  const u = undercoversFor(n), w = whiteFor(n, cfg.white);
+  const [civ, und] = pickPair(cfg.lang, cfg.adult);
+  const roles = shuffle([...Array(u).fill("u"), ...Array(w).fill("w"), ...Array(n - u - w).fill("c")]);
+  const deck = {}, deckr = {};
+  roles.forEach((r, i) => { deck["s" + i] = r === "c" ? civ : r === "u" ? und : WHITE; deckr["s" + i] = r; });
+  const plist = {}; ids.forEach(p => { plist[p] = players[p].name; });
+  $("#start").disabled = true;
+  F.update(F.ref(F.db, `bi/${code}`), {
+    game:{ id, players:plist, order:shuffle(ids.slice()), size:n, u, w, lang:cfg.lang, adult:cfg.adult, by:uid, at:F.serverTimestamp() },
+    [`deck/${id}`]: deck,
+    [`deckr/${id}`]: deckr,
+    [`word/${id}`]: norm(civ),
+    [`phase/${id}`]: phaseFor(0, "deal", DEAL_MS),
+  }).then(() => track("game_start", { players:n, undercovers:u, white:w, lang:cfg.lang, adult:cfg.adult }))
+    .catch(e => { console.error(e); $("#setupMsg").textContent = `Couldn't start (${errWhy(e)}). Try again.`; })
+    .finally(() => { $("#start").disabled = false; });
+}
+
+/* ---------- rendering ---------- */
+function render(){
+  $("#lobby").hidden = inRoom;
+  $("#room").hidden = !inRoom;
+  paintConn();
+  if(!inRoom) return;
+  $("#rcode").textContent = code.toUpperCase();
+  const live = game && stage() && stage() !== "over";
+  $("#adultTag").hidden = !(live ? game.adult : cfg.adult);
+  sideEffects();
+  renderSetup();
+  renderGame();
+  paintTimer();
+}
+
+/* things that should happen once per state, for every player */
+function sideEffects(){
+  if(!game || !G.phase) return;
+  const st = stage(), n = nowN(), p = G.phase;
+  if(st === "deal" && G.slot && !G.readySent && inGame()){ G.readySent = true; markDone(0); }
+  if(G.over && G.word && !G.showSent && inGame() && !val(G.show, uid)){ G.showSent = true; F.set(R(`show/${game.id}/${uid}`), G.word).catch(e => { console.warn(e); G.showSent = false; }); }
+  const key = `${st}${n}.${p.turn || 0}`;
+  if(key !== ui.phaseKey){
+    const first = ui.phaseKey === "";
+    ui.phaseKey = key; ui.lastTick = -1;
+    if(!first){
+      if(st === "talk" && p.speaker === uid) S.turn();
+      else if(st === "talk" && p.turn === 0) S.round();
+      else if(st === "vote") S.gong();
+    }
+  }
+  /* a pop for each new clue, a drop for each player voted out */
+  const clues = Object.values(G.clues || {}).reduce((a, r) => a + Object.keys(r || {}).length, 0), outs = Object.keys(G.out || {}).length;
+  if(ui.clues !== null && clues > ui.clues && !(st === "talk" && p.speaker === uid)) S.pop();
+  if(ui.outs !== null && outs > ui.outs) S.out();
+  ui.clues = clues; ui.outs = outs;
+  if(st === "over" && !G.ended && myTeamWon() !== null){
+    G.ended = true;
+    if(serverNow() - G.phase.startedAt < 15000) (myTeamWon() ? S.win : S.lose)(); /* no fanfare for a game that ended before you got here */
+    track("game_end", { winner:G.over.winner, my_team_won:myTeamWon(), rounds:n, players:gameIds().length });
+  }
+  advance();
+}
+
+function avClass(id){ let h = 0; for(const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return "a" + (h % 4); }
+function personRow(id, opts = {}){
+  const el = document.createElement(opts.onPick ? "button" : "div");
+  if(opts.onPick){ el.type = "button"; el.addEventListener("click", () => opts.onPick(id)); if(opts.disabled) el.disabled = true; }
+  const nm = opts.name || nameOf(id);
+  el.className = "pr" + (id === uid ? " me" : "") + (opts.gone ? " gone" : "") + (opts.off ? " off" : "") + (opts.cls ? " " + opts.cls : "");
+  el.innerHTML = `<span class="av ${avClass(id)}">${esc(nm.slice(0, 1).toUpperCase())}</span>
+    <span><span class="nm">${esc(nm)}${id === uid ? " (you)" : ""}</span>${opts.sub || ""}</span>
+    <span class="tags">${opts.tags || ""}${opts.count != null ? `<span class="votes">${opts.count || ""}</span>` : ""}</span>`;
+  return el;
+}
+
+function renderSetup(){
+  const st = stage(), live = game && st && st !== "over";
+  $("#setup").hidden = !!live;
+  if(live) return;
+  const host = hostId(), n = Object.keys(players).length, isHost = host === uid;
+  const ids = Object.keys(players).sort((a, b) => (players[a].joinedAt || 0) - (players[b].joinedAt || 0));
+  swapIn($("#lineup"), ids.map(id => personRow(id, { name:players[id].name, tags:id === host ? '<span class="tag host">Host</span>' : "" })), "setup");
+  $$("#langSeg button").forEach(b => { b.setAttribute("aria-pressed", String(b.dataset.lang === cfg.lang)); b.disabled = !isHost; });
+  $$("#adultSeg button").forEach(b => { b.setAttribute("aria-pressed", String((b.dataset.adult === "1") === cfg.adult)); b.disabled = !isHost; });
+  $$("#whiteSeg button").forEach(b => { b.setAttribute("aria-pressed", String((b.dataset.white === "1") === cfg.white)); b.disabled = !isHost; });
+  $("#setupTitle").textContent = game ? "Play again" : "Who's playing";
+  const size = Math.max(n, MIN_PLAYERS), u = undercoversFor(size), w = whiteFor(size, cfg.white), c = size - u - w;
+  $("#mix").innerHTML = n >= MIN_PLAYERS ? [`<span class="c">${c} ${c === 1 ? "Civilian" : "Civilians"}</span>`, `<span class="u">${u} ${u === 1 ? "Undercover" : "Undercovers"}</span>`, w ? `<span class="w">1 Mr. White</span>` : ""].join("") : "";
+  const sb = $("#start");
+  sb.hidden = !isHost;
+  sb.disabled = n < MIN_PLAYERS || n > MAX_PLAYERS;
+  sb.textContent = game ? "Deal new words" : "Deal the words";
+  const note = cfg.white && n >= MIN_PLAYERS && n < 5 ? " Mr. White joins from 5 players." : "";
+  $("#setupMsg").textContent = n < MIN_PLAYERS ? `Waiting for more people: ${n} of at least ${MIN_PLAYERS}. Share the invite link.`
+    : n > MAX_PLAYERS ? `Too many players: ${MAX_PLAYERS} at most.`
+    : (isHost ? "Everyone's here? Deal when you're ready." : `Waiting for ${players[host] ? players[host].name : "the host"} to deal.`) + note;
+}
+
+function closeCard(){ ui.cardOpen = false; clearTimeout(ui.cardTimer); const c = $("#wordcard"); if(c) c.classList.remove("open"); }
+
+function renderGame(){
+  $("#game").hidden = !game;
+  if(!game) return;
+  const p = G.phase, st = stage(), n = nowN();
+  /* round banner */
+  const badge = $("#badge");
+  badge.className = "badge" + (st === "vote" ? " vote" : st === "white" ? " white" : "");
+  badge.textContent = st === "deal" ? "✦" : st === "white" ? "?" : st === "over" ? "★" : String(n || "");
+  $("#ptitle").textContent = !p ? "…" : st === "deal" ? "The deal" : st === "talk" ? `Round ${n}` : st === "vote" ? `Round ${n} · Vote` : st === "white" ? "Last chance" : "Game over";
+  $("#psub").textContent = !p ? "" : st === "deal" ? "Peek at your word" : st === "talk" ? (p.speaker === uid ? "Your turn to give a clue" : `${nameOf(p.speaker)} is giving a clue`) : st === "vote" ? "Who doesn't fit?" : st === "white" ? `${nameOf(p.white)} guesses the word` : "All words revealed";
+  /* winner and the two words */
+  const over = st === "over" && G.over;
+  $("#winner").hidden = !over; $("#words").hidden = !over;
+  if(over){
+    const w = G.over.winner, many = game.u > 1;
+    $("#winner").className = "panel winner " + w;
+    const white = Object.keys(G.roles || {}).find(id => G.roles[id] === "w");
+    $("#winTitle").textContent = w === "c" ? "Civilians win!" : w === "u" ? (many ? "The Undercovers win!" : "The Undercover wins!") : "Mr. White wins!";
+    $("#winText").textContent = w === "c" ? (game.w ? "Every Undercover and Mr. White got caught." : `Every Undercover got caught.`)
+      : w === "u" ? `They blended in until only one Civilian was left${game.w ? ", together with Mr. White" : ""}.`
+      : `${white ? nameOf(white) : "Mr. White"} had no word at all, and still guessed it${G.guess ? `: "${G.guess.t}"` : ""}.`;
+    const wordFor = r => { const id = Object.keys(G.roles || {}).find(x => G.roles[x] === r && val(G.show, x)); return id ? G.show[id] : (myRole() === r && G.word ? G.word : "…"); };
+    $("#wordC").textContent = wordFor("c"); $("#wordU").textContent = wordFor("u");
+  }
+  /* word card */
+  const wc = $("#wordcard");
+  wc.hidden = !G.word || !inGame();
+  if(G.word){
+    const white = G.word === WHITE;
+    $("#wcFront").innerHTML = white
+      ? `<span class="lab">You are</span><span class="word white">Mr. White</span><p>You have no word. Listen to the clues and blend in. If you get voted out, guess the civilians' word to win.</p>`
+      : `<span class="lab">Your word</span><span class="word">${esc(G.word)}</span><p>Describe it without saying it. Someone here has a different word, and it might be you.</p>`;
+    wc.classList.toggle("open", ui.cardOpen);
+  }
+  renderAction();
+  renderLog();
+}
+
+/* build the player list and buttons off-screen, and only swap them in when they actually changed: replacing a button
+   mid-tap swallows the tap on touch screens */
+function swapIn(el, nodes, key){
+  const sig = key + "|" + nodes.map(x => x.outerHTML).join("");
+  if(el.dataset.sig === sig) return;
+  el.dataset.sig = sig; el.replaceChildren(...nodes);
+}
+function renderAction(){
+  const list = document.createElement("div"), acts = document.createElement("div");
+  try { renderActionInto(list, acts); }
+  finally {
+    const key = `${stage()}${nowN()}.${G.phase ? G.phase.turn || 0 : 0}`;
+    swapIn($("#plist"), [...list.childNodes], key);
+    swapIn($("#acts"), [...acts.childNodes], key);
+  }
+}
+/* has this player let round r go by without a clue? */
+function missed(r, id){
+  const o = val(G.out, id); if(o && Number(o) < r) return false;
+  const n = nowN(), st = stage();
+  if(r < n || (r === n && st !== "talk" && st !== "deal")) return true;
+  if(r === n && st === "talk"){ const i = speakers(n).indexOf(id); return i >= 0 && i < G.phase.turn; }
+  return false;
+}
+function clueChips(id, extra){
+  const out = [], n = nowN(), st = stage();
+  for(let r = 1; r <= n; r++){
+    const c = clueOf(r, id);
+    if(c) out.push(`<span class="cl${r === n && st === "talk" ? " now" : ""}"><i>${r}</i>${esc(c)}</span>`);
+    else if(missed(r, id)) out.push(`<span class="cl miss"><i>${r}</i>no clue</span>`);
+  }
+  if(extra) out.unshift(extra);
+  return out.length ? `<span class="clues">${out.join("")}</span>` : "";
+}
+function renderActionInto(list, acts){
+  const st = stage(), n = nowN(), p = G.phase;
+  const title = $("#actTitle"), ready = $("#ready");
+  ready.textContent = "";
+  $("#actHint").classList.remove("bad");
+  const myTurn = !!(p && st === "talk" && p.speaker === uid && !clueOf(n, uid));
+  const myGuess = !!(p && st === "white" && p.white === uid && !G.guess);
+  $("#clueBox").hidden = !myTurn; $("#guessBox").hidden = !myGuess;
+  const fk = myTurn ? `c${n}` : myGuess ? "g" : "";
+  if(fk && fk !== ui.focusKey && !matchMedia("(pointer: coarse)").matches) setTimeout(() => $(myTurn ? "#clueIn" : "#guessIn").focus(), 50);
+  ui.focusKey = fk;
+  if(!game || !p){ title.textContent = ""; setHint(""); return; }
+  const outSub = id => { const o = val(G.out, id); return o ? `Voted out in round ${o}` : ""; };
+  const row = (id, o = {}) => personRow(id, Object.assign({
+    gone:isOut(id), off:!players[id], tags:roleTag(val(G.roles, id)) + (players[id] ? "" : '<span class="tag off">Away</span>'),
+    sub:clueChips(id),
+  }, o));
+  const outs = orderIds().filter(isOut);
+
+  if(st === "over"){
+    title.textContent = "Who was who";
+    setHint("");
+    const ids = orderIds().sort((a, b) => ("cuw".indexOf(val(G.roles, b) || "c") - "cuw".indexOf(val(G.roles, a) || "c")));
+    list.replaceChildren(...ids.map(id => {
+      const wd = val(G.show, id);
+      return row(id, { gone:false, tags:roleTag(val(G.roles, id)) || '<span class="tag">…</span>', sub:clueChips(id, wd && wd !== WHITE ? `<span class="cl wd">${esc(wd)}</span>` : "") });
+    }));
+    return;
+  }
+  if(st === "deal"){
+    title.textContent = "Players";
+    setHint(G.word ? "Tap your card above to peek at your word. Clues start in a moment." : inGame() ? "Dealing your word…" : "");
+    const seated = doneSet(0);
+    list.replaceChildren(...orderIds().map(id => row(id, { sub: seated.includes(id) ? "" : '<span class="sub">Getting their word…</span>' })));
+    ready.textContent = `${seated.length} of ${gameIds().length} have their word`;
+    const late = serverNow() > p.endsAt && !gameIds().every(x => seated.includes(x));
+    if(late && hostId() === uid) acts.append(btn("Deal again", "", false, startGame));
+    if(late) setHint("Someone hasn't picked up their word. The host can deal again with whoever is here.");
+    return;
+  }
+  if(!inGame()) setHint("This game started before you arrived. Watch, and you'll play in the next one.");
+
+  if(st === "talk"){
+    title.textContent = "Clues";
+    const order = speakers(n), next = order[p.turn + 1];
+    if(inGame()){
+      if(myTurn) setHint(G.word === WHITE ? "Your turn. You have no word, so bluff something that fits the clues so far." : "Your turn! One short clue about your word, without saying it.");
+      else if(p.speaker === uid) setHint("Clue sent. Now watch the others.");
+      else if(!meAlive()) setHint("You're out. Watch the rest, and no hints!");
+      else setHint(`${nameOf(p.speaker)} is thinking of a clue…${next === uid ? " You're next." : ""}`);
+    }
+    list.replaceChildren(...order.map(id => row(id, { cls:id === p.speaker ? "cur" : "", tags:id === p.speaker ? '<span class="tag speak">Now</span>' : (players[id] ? "" : '<span class="tag off">Away</span>') })), ...outs.map(id => row(id)));
+    return;
+  }
+  if(st === "vote"){
+    title.textContent = "Who doesn't fit?";
+    const vs = votesOf(n), mine = vs[uid], decided = val(G.res, n) != null, alive = aliveIds();
+    if(inGame()) setHint(!meAlive() ? "You're out. Watch the vote." : decided ? "The vote is closed." : mine ? `You voted for ${nameOf(mine)}. Tap someone else to change it.` : "Read the clues, talk it over, then tap who to vote out. Most votes goes; a tie means nobody.");
+    list.replaceChildren(...alive.map(id => {
+      const who = Object.keys(vs).filter(x => vs[x] === id && alive.includes(x)).map(nameOf);
+      return row(id, {
+        onPick: !meAlive() || decided || id === uid ? null : castVote,
+        cls: mine === id ? "sel" : "",
+        count: alive.filter(x => vs[x] === id).length,
+        sub: clueChips(id) + (who.length ? `<span class="sub">Votes: ${esc(who.join(", "))}</span>` : ""),
+      });
+    }), ...outs.map(id => row(id)));
+    ready.textContent = `${alive.filter(x => vs[x]).length} of ${alive.length} have voted`;
+    return;
+  }
+  if(st === "white"){
+    const wid = p.white;
+    title.textContent = "Mr. White's last chance";
+    if(myGuess) setHint("You're out, but you get one guess: what's the civilians' word? Get it right and you win.");
+    else if(G.guess) setHint(`${nameOf(wid)} guessed "${G.guess.t}"…${G.gres === false ? " Wrong!" : G.gres === true ? " Right!" : ""}`);
+    else setHint(`${nameOf(wid)} was Mr. White! They get one guess at the civilians' word…`);
+    list.replaceChildren(...aliveIds().map(id => row(id)), ...outs.map(id => row(id)));
+  }
+}
+function btn(label, kind, disabled, fn){ const b = document.createElement("button"); b.type = "button"; b.className = "btn" + (kind ? " " + kind : ""); b.textContent = label; b.disabled = !!disabled; b.addEventListener("click", fn); return b; }
+
+function renderLog(){
+  const items = [], last = nowN();
+  for(let n = 1; n <= last; n++){
+    const r = val(G.res, n);
+    if(r == null) continue;
+    if(r === "none"){ items.push(`<li><small>Round ${n}</small>The vote was a tie. Nobody went out.</li>`); continue; }
+    const role = val(G.roles, r);
+    items.push(`<li class="k"><small>Round ${n}</small><b>${esc(nameOf(r))}</b> was voted out. ${role ? `They were ${role === "w" ? "" : "a "}<b>${ROLE[role].name}</b>.` : "…"}</li>`);
+    if(role === "w" && G.guess) items.push(`<li class="k"><small>Round ${n}</small>Mr. White guessed <b>"${esc(G.guess.t)}"</b>. ${G.gres === true ? "Right!" : G.gres === false ? "Wrong." : "…"}</li>`);
+    else if(role === "w" && stage() !== "white" && G.gres == null) items.push(`<li><small>Round ${n}</small>Mr. White didn't guess in time.</li>`);
+  }
+  $("#logP").hidden = !items.length;
+  $("#log").innerHTML = items.reverse().join("");
+}
+
+function paintTimer(){
+  const p = G.phase, el = $("#timer"), bar = $("#bar");
+  if(!p || !game || p.stage === "over"){ el.textContent = ""; el.classList.remove("low"); bar.style.transform = "scaleX(0)"; return; }
+  const left = Math.max(0, p.endsAt - serverNow()), total = Math.max(1, p.endsAt - p.startedAt), s = Math.ceil(left / 1000);
+  el.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const mine = (p.stage === "talk" && p.speaker === uid) || (p.stage === "white" && p.white === uid) || (p.stage === "vote" && meAlive() && !votesOf(p.n)[uid]);
+  const low = s <= 10 && p.stage !== "deal";
+  el.classList.toggle("low", low);
+  bar.style.transform = `scaleX(${left / total})`;
+  if(low && mine && s > 0 && s <= 5 && s !== ui.lastTick){ ui.lastTick = s; S.tick(); }
+}
+
+/* ---------- wiring ---------- */
+$("#sound").addEventListener("click", () => { soundOn = !soundOn; store.set("bi-sound", soundOn); paintSound(); if(soundOn){ S.init(); S.tap(); } });
+$("#create").addEventListener("click", () => joinRoom(genCode(), true));
+$("#join").addEventListener("click", () => {
+  const c = $("#codeIn").value.trim().toLowerCase();
+  if(!/^[a-z0-9]{4}$/.test(c)){ setLobbyMsg("Room codes are 4 letters or numbers."); return; }
+  joinRoom(c, false);
+});
+$("#codeIn").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); $("#join").click(); } });
+$("#nick").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); ($("#codeIn").value ? $("#join") : $("#create")).click(); } });
+$("#leave").addEventListener("click", leaveRoom);
+$("#invite").addEventListener("click", () => {
+  const link = location.origin + location.pathname + "#" + code;
+  const text = `Join our game of Blend In. Room ${code.toUpperCase()}`;
+  const b = $("#invite");
+  const done = () => { b.textContent = "Link copied"; setTimeout(() => { b.textContent = "Invite"; }, 1600); };
+  if(navigator.share && matchMedia("(pointer: coarse)").matches){ navigator.share({ title:"Blend In", text, url:link }).catch(() => {}); return; }
+  try { navigator.clipboard.writeText(text + "\n" + link).then(done, () => {}); } catch(e){}
+});
+function setCfg(next){
+  if(hostId() !== uid || (game && G.phase && G.phase.stage !== "over")) return;
+  cfg = Object.assign({}, cfg, next); render(); S.tap();
+  F.set(R("cfg"), cfg).catch(e => console.error(e));
+}
+$$("#langSeg button").forEach(b => b.addEventListener("click", () => setCfg({ lang:b.dataset.lang })));
+$$("#adultSeg button").forEach(b => b.addEventListener("click", () => setCfg({ adult:b.dataset.adult === "1" })));
+$$("#whiteSeg button").forEach(b => b.addEventListener("click", () => setCfg({ white:b.dataset.white === "1" })));
+$("#start").addEventListener("click", startGame);
+$("#clueSend").addEventListener("click", sendClue);
+$("#clueIn").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); sendClue(); } });
+$("#guessSend").addEventListener("click", sendGuess);
+$("#guessIn").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); sendGuess(); } });
+$("#starLink").addEventListener("click", () => track("github_click"));
+$("#wordcard").addEventListener("click", () => {
+  ui.cardOpen = !ui.cardOpen; clearTimeout(ui.cardTimer);
+  if(ui.cardOpen) ui.cardTimer = setTimeout(() => { ui.cardOpen = false; render(); }, 6000);
+  S.tap(); render();
+});
+setInterval(() => { if(inRoom && game){ paintTimer(); advance(); } }, 1000);
+
+$("#nick").value = store.get("bi-nick", store.get("ww-nick", store.get("sw-nick", store.get("m24-nick", ""))));
+const hashCode = (location.hash || "").slice(1).toLowerCase();
+if(/^[a-z0-9]{4}$/.test(hashCode)){ $("#codeIn").value = hashCode.toUpperCase(); setLobbyMsg("You've been invited! Add your name and tap Join."); }
+paintSound(); paintConn(); initFirebase();
+</script>
+</body>
+</html>
