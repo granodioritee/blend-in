@@ -1017,7 +1017,7 @@ function btn(label, kind, disabled, fn){ const b = document.createElement("butto
 
 function renderLog(){
   const items = [], last = nowN();
-  const wasA = role => role ? `They were ${role === "w" ? "" : "a "}<b>${ROLE[role].name}</b>.` : "…";
+  const wasA = role => role ? `They were ${role === "w" ? "" : role === "u" ? "an " : "a "}<b>${ROLE[role].name}</b>.` : "…";
   for(let n = 1; n <= last; n++){
     orderIds().filter(id => val(G.out, id) === "i" + n).forEach(id => items.push(`<li class="k"><small>Round ${n}</small><b>${esc(nameOf(id))}</b> missed two turns in a row and is out. ${wasA(val(G.roles, id))}</li>`));
     const r = val(G.res, n);
@@ -1025,11 +1025,11 @@ function renderLog(){
     if(r === "none"){
       const counts = {}; Object.values(votesOf(n)).forEach(v => { counts[v] = (counts[v] || 0) + 1; });
       const skips = counts.skip || 0, most = Math.max(0, ...Object.entries(counts).filter(([k]) => k !== "skip").map(([, c]) => c));
-      items.push(`<li><small>Round ${n}</small>${skips && skips >= most ? "The group voted to skip. Nobody went out." : "The vote was a tie. Nobody went out."}</li>`);
+      items.push(`<li><small>Round ${n}</small>${!skips && !most ? "Nobody voted in time. Nobody went out." : skips >= most ? "The group voted to skip. Nobody went out." : "The vote was a tie. Nobody went out."}</li>`);
       continue;
     }
     const role = val(G.roles, r);
-    items.push(`<li class="k"><small>Round ${n}</small><b>${esc(nameOf(r))}</b> was voted out. ${role ? `They were ${role === "w" ? "" : "a "}<b>${ROLE[role].name}</b>.` : "…"}</li>`);
+    items.push(`<li class="k"><small>Round ${n}</small><b>${esc(nameOf(r))}</b> was voted out. ${wasA(role)}</li>`);
     if(role === "w" && G.guess) items.push(`<li class="k"><small>Round ${n}</small>Mr. White guessed <b>"${esc(G.guess.t)}"</b>. ${G.gres === true ? "Right!" : G.gres === false ? "Wrong." : "…"}</li>`);
     else if(role === "w" && stage() !== "white" && G.gres == null) items.push(`<li><small>Round ${n}</small>Mr. White didn't guess in time.</li>`);
   }
