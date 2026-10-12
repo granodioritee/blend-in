@@ -11,7 +11,8 @@ A word party game for your friend group. Everyone gets the same secret word, alm
 - Most players are **Civilians** and share one word, say *Coffee*
 - The **Undercover** gets a close but different word, say *Tea*, and doesn't know they're the Undercover
 - **Mr. White** (optional, from 5 players) gets no word at all and has to bluff
-- Everyone takes a turn giving one short clue, then the group votes someone out
+- Everyone takes turns giving a clue of up to three words; the first vote comes once everyone has given two
+- Vote someone out, or vote to skip. Miss your turn twice in a row and you're out
 - A Mr. White who gets voted out can still win by guessing the Civilians' word
 
 ## Features
@@ -20,6 +21,7 @@ A word party game for your friend group. Everyone gets the same secret word, alm
 - Words in Bahasa Indonesia or English, over 300 pairs
 - An optional 21+ pack of adult word pairs, off unless the host turns it on
 - Clues are typed, so it works over a video call as well as in the same room
+- Chat and quick reactions ("Sus 👀") pop up as bubbles on everyone's screen
 
 ## No peeking
 
